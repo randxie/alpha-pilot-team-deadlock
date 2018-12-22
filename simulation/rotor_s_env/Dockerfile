@@ -29,6 +29,3 @@ RUN cd ~/catkin_ws/src/rotors_simulator/rotors_hil_interface/ && \
     echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc && \
     /bin/sh ~/.bashrc && \
     . ~/catkin_ws/devel/setup.bash
-
-#RUN roslaunch rotors_gazebo mav_hovering_example.launch mav_name:=firefly world_name:=basic
-#  roslaunch gazebo_ros empty_world.launch

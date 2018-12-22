@@ -20,3 +20,5 @@ nvidia-docker run -it \
  alphapilot:1.0
 
 xhost -local:root
+
+# docker exec -it [container-id] bash
