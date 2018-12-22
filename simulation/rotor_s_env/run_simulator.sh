@@ -1,0 +1,2 @@
+roslaunch gazebo_ros empty_world.launch
+roslaunch rotors_gazebo mav_hovering_example.launch
