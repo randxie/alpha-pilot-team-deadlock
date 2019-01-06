@@ -110,6 +110,10 @@ def create_tf_example(image,
   image_id = image['id']
 
   full_path = os.path.join(image_dir, filename)
+  if not tf.gfile.Exists(full_path):
+    tf.logging.warn('Image file: %s not exist. skipped', full_path)
+    return None, None, None
+
   with tf.gfile.GFile(full_path, 'rb') as fid:
     encoded_jpg = fid.read()
   encoded_jpg_io = io.BytesIO(encoded_jpg)
@@ -237,9 +241,10 @@ def _create_tf_record_from_coco_annotations(
       annotations_list = annotations_index[image['id']]
       _, tf_example, num_annotations_skipped = create_tf_example(
           image, annotations_list, image_dir, category_index, include_masks)
-      total_num_annotations_skipped += num_annotations_skipped
-      shard_idx = idx % num_shards
-      output_tfrecords[shard_idx].write(tf_example.SerializeToString())
+      if tf_example:
+        total_num_annotations_skipped += num_annotations_skipped
+        shard_idx = idx % num_shards
+        output_tfrecords[shard_idx].write(tf_example.SerializeToString())
     tf.logging.info('Finished writing, skipped %d annotations.',
                     total_num_annotations_skipped)
 
