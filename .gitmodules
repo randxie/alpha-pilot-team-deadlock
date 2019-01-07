@@ -1,0 +1,3 @@
+[submodule "vision/gate_detection/third_party/models"]
+	path = vision/gate_detection/third_party/models
+	url = git@github.com:tensorflow/models.git

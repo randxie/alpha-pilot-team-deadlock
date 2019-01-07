@@ -46,18 +46,9 @@ Debug
 *.cpage.col
 *.cpage
 *.Rproj
-./xgboost.mpi
-./xgboost.mock
 #.Rbuildignore
 R-package.Rproj
 *.cache*
-# java
-java/xgboost4j/target
-java/xgboost4j/tmp
-java/xgboost4j-demo/target
-java/xgboost4j-demo/data/
-java/xgboost4j-demo/tmp/
-java/xgboost4j-demo/model/
 nb-configuration*
 # Eclipse
 .project
@@ -66,10 +57,10 @@ nb-configuration*
 .settings/
 build
 config.mk
-/xgboost
 *.data
 build_plugin
 .idea
+*.ipynb_checkpoints
 recommonmark/
 tags
 *.iml
