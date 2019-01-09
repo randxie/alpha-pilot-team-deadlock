@@ -4,6 +4,7 @@ import numpy as np
 import scipy.integrate
 import datetime
 
+from .controller import PIDController
 from .quad_config import GRAVITY_COEFF
 from .quad_config import QuadConfig
 from .utils import get_rotation_mtx
@@ -60,8 +61,8 @@ class QuadcopterEnv(gym.Env):
   # Control input (Action space): 4 propellers' speed
   # Use notation in Vijar Kumar's paper "Minimum Snap Trajectory Generation and Control for Quadrotors"
 
-  def __init__(self):
-    self.quad_model = QuadcopterModel()
+  def __init__(self, quad_model):
+    self.quad_model = quad_model
     self.step_time = 0.05 # simulation time per step() function call (unit: second)
     self.states = None
     self.time = None
@@ -118,11 +119,12 @@ class QuadcopterEnv(gym.Env):
 
 
 if __name__ == '__main__':
-  print('Running experiments.')
-  env = QuadcopterEnv()
-  for i in range(10):
-    action = np.array([[1, 1, 1, 1]]).T
+  desired_states = [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  quad_obj = QuadcopterModel()
+  controller = PIDController(quad_obj)
+  env = QuadcopterEnv(quad_obj)
+  for i in range(1000):
+    action = controller.compute_action(env.states, desired_states)
     new_state, _, _, _ = env.step(action)
-    print(new_state[0:3])
 
 
