@@ -1,165 +1,114 @@
+import functools
 import gym
 import numpy as np
-import math
 import scipy.integrate
-import time
 import datetime
-import threading
 
-from .common
-
-class Propeller(object):
-  """Simulate propeller with motor."""
-  def __init__(self, prop_dia, prop_pitch, thrust_unit='N'):
-    self.dia = prop_dia
-    self.pitch = prop_pitch
-    self.thrust_unit = thrust_unit
-    self.speed = 0  # RPM
-    self.thrust = 0
-
-  def set_speed(self, speed):
-    self.speed = speed
-    # From http://www.electricrcaircraftguy.com/2013/09/propeller-static-dynamic-thrust-equation.html
-    self.thrust = 4.392e-8 * self.speed * math.pow(self.dia, 3.5) / (math.sqrt(self.pitch))
-    self.thrust = self.thrust * (4.23e-4 * self.speed * self.pitch)
-    if self.thrust_unit == 'Kg':
-      self.thrust = self.thrust * 0.101972
+from .quad_config import GRAVITY_COEFF
+from .quad_config import QuadConfig
+from .utils import get_rotation_mtx
+from .utils import wrap_angle
 
 
-class QuadcopterFrame(object):
+class QuadcopterModel(object):
+  """Represents the quad-copter frame.
+
+  Units:
+    arm_length: 'm'
+    weight: 'kg' (including battery, motor, propeller, frame)
+    thrust: 'N'
+    omega: 'rad/s
+  """
+
   def __init__(self):
-    self.weight = 100
+    # propeller related
+    self.k_m = QuadConfig.ROTOR_DRAG_CONSTANT
+    self.k_f = QuadConfig.ROTOR_THRUST_CONSTANT
+
+    # ------------------------
+    # Frame
+    # ------------------------
+    self.L = QuadConfig.QUAD_ARM_LENGTH  # arm length: from center to motor
+    self.mass = QuadConfig.QUAD_MASS
+
+    # ------------------------
+    # Control related
+    # ------------------------
+    # mapping from omega square to force/moment
+    self.omega_force_mtx = np.array([[self.k_f, self.k_f, self.k_f, self.k_f],
+                                     [0, self.k_f * self.L, 0, -self.k_f * self.L],
+                                     [-self.k_f * self.L, 0, self.k_f * self.L, 0],
+                                     [self.k_m, -self.k_m, self.k_m, -self.k_m]])
+
+    # Based on body frame. Assume the cross terms are negligible
+    rotate_mass = self.mass / 6
+    self.Ixx = 1 / 12 * rotate_mass * ((2 * self.L) ** 2)
+    self.Iyy = 1 / 12 * rotate_mass * ((2 * self.L) ** 2)
+    self.Izz = 1 / 3 * rotate_mass * (self.L ** 2)
+    self.inertial_mtx = np.array([[self.Ixx, 0, 0],
+                                  [0, self.Iyy, 0],
+                                  [0, 0, self.Izz]])
+
+  def compute_control_input(self, action_vec):
+    # Note: action_vec has been squared.
+    return self.omega_force_mtx * action_vec
 
 
 class QuadcopterEnv(gym.Env):
-  # State space representation: [x y z x_dot y_dot z_dot theta phi gamma theta_dot phi_dot gamma_dot]
-  # From Quadcopter Dynamics, Simulation, and Control by Andrew Gibiansky
+  # State space representation: [x, y, z, phi, theta, psi, x_dot, y_dot, z_dot, p, q, r]
+  #   - where phi, theta and psi are Euler angles
+  # Control input (Action space): 4 propellers' speed
+  # Use notation in Vijar Kumar's paper "Minimum Snap Trajectory Generation and Control for Quadrotors"
 
-  def __init__(self, quads, gravity=9.81, b=0.0245):
-    self.quads = quads
-    self.g = gravity
-    self.b = b
-    self.thread_object = None
-    self.ode = scipy.integrate.ode(self.state_dot).set_integrator('vode', nsteps=500, method='bdf')
-
-    for key in self.quads:
-      self.quads[key]['state'] = np.zeros(12)
-      self.quads[key]['state'][0:3] = self.quads[key]['position']
-      self.quads[key]['state'][6:9] = self.quads[key]['orientation']
-      self.quads[key]['m1'] = Propeller(self.quads[key]['prop_size'][0], self.quads[key]['prop_size'][1])
-      self.quads[key]['m2'] = Propeller(self.quads[key]['prop_size'][0], self.quads[key]['prop_size'][1])
-      self.quads[key]['m3'] = Propeller(self.quads[key]['prop_size'][0], self.quads[key]['prop_size'][1])
-      self.quads[key]['m4'] = Propeller(self.quads[key]['prop_size'][0], self.quads[key]['prop_size'][1])
-      # From Quadrotor Dynamics and Control by Randal Beard
-      ixx = ((2 * self.quads[key]['weight'] * self.quads[key]['r'] ** 2) / 5) + (
-              2 * self.quads[key]['weight'] * self.quads[key]['L'] ** 2)
-      iyy = ixx
-      izz = ((2 * self.quads[key]['weight'] * self.quads[key]['r'] ** 2) / 5) + (
-              4 * self.quads[key]['weight'] * self.quads[key]['L'] ** 2)
-      self.quads[key]['I'] = np.array([[ixx, 0, 0], [0, iyy, 0], [0, 0, izz]])
-      self.quads[key]['invI'] = np.linalg.inv(self.quads[key]['I'])
-
+  def __init__(self):
+    self.quad_model = QuadcopterModel()
+    self.step_time = 0.05 # simulation time per step() function call (unit: second)
+    self.states = None
+    self.time = None
     self.reset()
 
   def reset(self):
-    self.time = datetime.datetime.now()
+    self.time = 0
+    self.states = np.zeros((12, 1))
 
-  def rotation_matrix(self, angles):
-    ct = math.cos(angles[0])
-    cp = math.cos(angles[1])
-    cg = math.cos(angles[2])
-    st = math.sin(angles[0])
-    sp = math.sin(angles[1])
-    sg = math.sin(angles[2])
-    R_x = np.array([[1, 0, 0], [0, ct, -st], [0, st, ct]])
-    R_y = np.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
-    R_z = np.array([[cg, -sg, 0], [sg, cg, 0], [0, 0, 1]])
-    R = np.dot(R_z, np.dot(R_y, R_x))
-    return R
+  def step(self, action):
+    """
+    :param action: [omega_1^2, omega_2^2, omega_3^2, omega_4^2]
+    :return:
+    """
+    # wrap angles
+    self.states[3:6] = wrap_angle(self.states[3:6])
 
-  def wrap_angle(self, val):
-    return ((val + np.pi) % (2 * np.pi) - np.pi)
+    # Compute control input
+    u = self.quad_model.compute_control_input(action)
 
-  def state_dot(self, time, state, key):
-    state_dot = np.zeros(12)
-    # The velocities(t+1 x_dots equal the t x_dots)
-    state_dot[0] = self.quads[key]['state'][3]
-    state_dot[1] = self.quads[key]['state'][4]
-    state_dot[2] = self.quads[key]['state'][5]
-    # The acceleration
-    x_dotdot = np.array([0, 0, -self.quads[key]['weight'] * self.g]) + np.dot(
-      self.rotation_matrix(self.quads[key]['state'][6:9]), np.array([0, 0, (
-              self.quads[key]['m1'].thrust + self.quads[key]['m2'].thrust + self.quads[key]['m3'].thrust +
-              self.quads[key]['m4'].thrust)])) / self.quads[key]['weight']
-    state_dot[3] = x_dotdot[0]
-    state_dot[4] = x_dotdot[1]
-    state_dot[5] = x_dotdot[2]
-    # The angular rates(t+1 theta_dots equal the t theta_dots)
-    state_dot[6] = self.quads[key]['state'][9]
-    state_dot[7] = self.quads[key]['state'][10]
-    state_dot[8] = self.quads[key]['state'][11]
-    # The angular accelerations
-    omega = self.quads[key]['state'][9:12]
-    tau = np.array([self.quads[key]['L'] * (self.quads[key]['m1'].thrust - self.quads[key]['m3'].thrust),
-                    self.quads[key]['L'] * (self.quads[key]['m2'].thrust - self.quads[key]['m4'].thrust), self.b * (
-                            self.quads[key]['m1'].thrust - self.quads[key]['m2'].thrust + self.quads[key][
-                      'm3'].thrust - self.quads[key]['m4'].thrust)])
-    omega_dot = np.dot(self.quads[key]['invI'], (tau - np.cross(omega, np.dot(self.quads[key]['I'], omega))))
-    state_dot[9] = omega_dot[0]
-    state_dot[10] = omega_dot[1]
-    state_dot[11] = omega_dot[2]
-    return state_dot
+    dyn_eqn = functools.partial(self.state_dot, action=u)
+    sol_obj = scipy.integrate.solve_ivp(dyn_eqn, (self.time, self.time + self.step_time), self.states, 'RK23')
 
-  def update(self, dt):
-    for key in self.quads:
-      self.ode.set_initial_value(self.quads[key]['state'], 0).set_f_params(key)
-      self.quads[key]['state'] = self.ode.integrate(self.ode.t + dt)
-      self.quads[key]['state'][6:9] = self.wrap_angle(self.quads[key]['state'][6:9])
-      self.quads[key]['state'][2] = max(0, self.quads[key]['state'][2])
+    # update state
+    self.states = sol_obj.y[:, -1]
 
-  def set_motor_speeds(self, quad_name, speeds):
-    self.quads[quad_name]['m1'].set_speed(speeds[0])
-    self.quads[quad_name]['m2'].set_speed(speeds[1])
-    self.quads[quad_name]['m3'].set_speed(speeds[2])
-    self.quads[quad_name]['m4'].set_speed(speeds[3])
+  def state_dot(self, time, states, action):
+    u = action
 
-  def get_position(self, quad_name):
-    return self.quads[quad_name]['state'][0:3]
+    # assume the action is fixed with in the time span
+    euler_angles = states[3:6]
 
-  def get_linear_rate(self, quad_name):
-    return self.quads[quad_name]['state'][3:6]
+    # compute d/dt ([x, y, z, xdot, ydot, zdot])
+    z_world = np.array([[0, 0, 1]]).T
+    z_body_w = np.dot(get_rotation_mtx(euler_angles), np.array([[0, 0, 1]]).T)
 
-  def get_orientation(self, quad_name):
-    return self.quads[quad_name]['state'][6:9]
+    # get derivative of translation motion
+    r_dot = states[6:9]
+    r_ddot = -GRAVITY_COEFF * z_world + u[0] * z_body_w
 
-  def get_angular_rate(self, quad_name):
-    return self.quads[quad_name]['state'][9:12]
+    # compute d/dt ([phi, theta, psi, p, q, r])
+    I_mtx = self.quad_model.inertial_mtx
+    omega_bw = states[9:12]
+    omega_dot = np.dot(np.linalg.inv(I_mtx), - np.cross(omega_bw, np.dot(I_mtx, omega_bw)) + u[1:4])
 
-  def get_state(self, quad_name):
-    return self.quads[quad_name]['state']
+    return np.vstack((r_dot, r_ddot, omega_bw, omega_dot))
 
-  def set_position(self, quad_name, position):
-    self.quads[quad_name]['state'][0:3] = position
+  def render(self, mode='human'):
+    pass
 
-  def set_orientation(self, quad_name, orientation):
-    self.quads[quad_name]['state'][6:9] = orientation
-
-  def get_time(self):
-    return self.time
-
-  def thread_run(self, dt, time_scaling):
-    rate = time_scaling * dt
-    last_update = self.time
-    while (self.run == True):
-      time.sleep(0)
-      self.time = datetime.datetime.now()
-      if (self.time - last_update).total_seconds() > rate:
-        self.update(dt)
-        last_update = self.time
-
-  def start_thread(self, dt=0.002, time_scaling=1):
-    self.thread_object = threading.Thread(target=self.thread_run, args=(dt, time_scaling))
-    self.thread_object.start()
-
-  def stop_thread(self):
-    self.run = False
