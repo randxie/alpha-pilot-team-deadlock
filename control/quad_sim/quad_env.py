@@ -51,7 +51,7 @@ class QuadcopterModel(object):
 
   def compute_control_input(self, action_vec):
     # Note: action_vec has been squared.
-    return self.omega_force_mtx * action_vec
+    return np.dot(self.omega_force_mtx, action_vec)
 
 
 class QuadcopterEnv(gym.Env):
@@ -69,7 +69,7 @@ class QuadcopterEnv(gym.Env):
 
   def reset(self):
     self.time = 0
-    self.states = np.zeros((12, 1))
+    self.states = np.zeros(12)
 
   def step(self, action):
     """
@@ -79,17 +79,20 @@ class QuadcopterEnv(gym.Env):
     # wrap angles
     self.states[3:6] = wrap_angle(self.states[3:6])
 
-    # Compute control input
+    # compute control input
     u = self.quad_model.compute_control_input(action)
 
+    # solve dynamic equations
     dyn_eqn = functools.partial(self.state_dot, action=u)
     sol_obj = scipy.integrate.solve_ivp(dyn_eqn, (self.time, self.time + self.step_time), self.states, 'RK23')
 
     # update state
-    self.states = sol_obj.y[:, -1]
+    self.states = sol_obj.y[:, -1].flatten()
+
+    return self.states, 0, False, {}
 
   def state_dot(self, time, states, action):
-    u = action
+    u = action.flatten()
 
     # assume the action is fixed with in the time span
     euler_angles = states[3:6]
@@ -105,10 +108,21 @@ class QuadcopterEnv(gym.Env):
     # compute d/dt ([phi, theta, psi, p, q, r])
     I_mtx = self.quad_model.inertial_mtx
     omega_bw = states[9:12]
-    omega_dot = np.dot(np.linalg.inv(I_mtx), - np.cross(omega_bw, np.dot(I_mtx, omega_bw)) + u[1:4])
+    cross_prod = np.cross(omega_bw, np.dot(I_mtx, omega_bw))
+    omega_dot = np.dot(np.linalg.inv(I_mtx), (-cross_prod + u[1:4]))
 
-    return np.vstack((r_dot, r_ddot, omega_bw, omega_dot))
+    return np.hstack((r_dot, omega_bw, r_ddot.flatten(), omega_dot))
 
   def render(self, mode='human'):
     pass
+
+
+if __name__ == '__main__':
+  print('Running experiments.')
+  env = QuadcopterEnv()
+  for i in range(10):
+    action = np.array([[1, 1, 1, 1]]).T
+    new_state, _, _, _ = env.step(action)
+    print(new_state[0:3])
+
 
