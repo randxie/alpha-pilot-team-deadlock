@@ -1,10 +1,11 @@
 import functools
 import gym
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate
-import datetime
 
 from .controller import PIDController
+from .env_renderer import EnvRenderer
 from .quad_config import GRAVITY_COEFF
 from .quad_config import QuadConfig
 from .utils import get_rotation_mtx
@@ -66,6 +67,7 @@ class QuadcopterEnv(gym.Env):
     self.step_time = 0.05 # simulation time per step() function call (unit: second)
     self.states = None
     self.time = None
+    self.renderer = None
     self.reset()
 
   def reset(self):
@@ -89,6 +91,9 @@ class QuadcopterEnv(gym.Env):
 
     # update state
     self.states = sol_obj.y[:, -1].flatten()
+
+    if self.renderer:
+      self.renderer.update(self.states)
 
     return self.states, 0, False, {}
 
@@ -115,16 +120,23 @@ class QuadcopterEnv(gym.Env):
     return np.hstack((r_dot, omega_bw, r_ddot.flatten(), omega_dot))
 
   def render(self, mode='human'):
-    pass
+    if self.renderer is None:
+      self.renderer = EnvRenderer(self.quad_model)
 
 
 if __name__ == '__main__':
-  desired_states = [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  desired_states = [1, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   quad_obj = QuadcopterModel()
   controller = PIDController(quad_obj)
   env = QuadcopterEnv(quad_obj)
-  for i in range(1000):
+  env.render()
+  for i in range(500):
+    if i < 50:
+      desired_states = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    else:
+      desired_states = [2, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     action = controller.compute_action(env.states, desired_states)
     new_state, _, _, _ = env.step(action)
+  env.renderer.cleanup()
 
 
