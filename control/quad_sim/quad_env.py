@@ -130,6 +130,7 @@ if __name__ == '__main__':
   controller = PIDController(quad_obj)
   env = QuadcopterEnv(quad_obj)
   env.render()
+  """
   for i in range(500):
     if i < 50:
       desired_states = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -138,5 +139,19 @@ if __name__ == '__main__':
     action = controller.compute_action(env.states, desired_states)
     new_state, _, _, _ = env.step(action)
   env.renderer.cleanup()
+  """
 
+  # generate animation
+  from matplotlib.animation import FuncAnimation
+  env.reset()
+  def animate(i):
+    if i < 20:
+      desired_states = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    else:
+      desired_states = [2, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    action = controller.compute_action(env.states, desired_states)
+    env.step(action)
+
+  anim = FuncAnimation(env.renderer.fig, animate, interval=2, frames=100, repeat=False)
+  anim.save('example_pid_controller.gif', writer='imagemagick')
 
