@@ -12,3 +12,5 @@ Tasks for qualifier:
 * Simulation
     * Simple dynamic simulation in numpy
     * ROS full simulation
+* Code Generation
+    * Use TVM to generate optimized embedded code
