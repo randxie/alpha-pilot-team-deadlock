@@ -10,7 +10,7 @@ An Efficient Semi-Supervised Deep Neural Network Approach](https://arxiv.org/pdf
 
 * Control
     * [Minimum Snap Trajectory](http://www-personal.acfr.usyd.edu.au/spns/cdm/papers/Mellinger.pdf) - Mellinger, D. 
-
+    * [Minimum-time trajectory generation for quadrotors in constrained environments](https://arxiv.org/pdf/1706.06478.pdf)
 * SLAM
     * 
 

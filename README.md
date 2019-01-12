@@ -14,3 +14,4 @@ Tasks for qualifier:
     * ROS full simulation
 * Code Generation
     * Use TVM to generate optimized embedded code
+    * Or probably TensorRT that's used in Jetson
