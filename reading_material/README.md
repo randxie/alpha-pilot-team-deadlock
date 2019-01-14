@@ -1,6 +1,6 @@
 # Papers
 
-* General Multirotor research
+* General Multirotor Research
     * [Deep Drone Racing](https://arxiv.org/abs/1806.08548)
     * [Multirotor Dynamics](https://asumav.engineering.asu.edu/wp-content/uploads/2014/08/IEEE-RAS-Magazine-Quadrotors.pdf)
 
@@ -10,7 +10,8 @@
 Applications](https://arxiv.org/pdf/1704.04861.pdf)
     * [Feature Pyramid Networks for Object Detection](https://arxiv.org/pdf/1612.03144.pdf)
     * [RetinaNet: Focal Loss for Dense Object Detection](https://arxiv.org/pdf/1708.02002.pdf)
-
+    * [YOLO v3](https://pjreddie.com/media/files/papers/YOLOv3.pdf) - J. Redmon 
+    
 * Vision - Depth Estimation
     * [On the Importance of Stereo for Accurate Depth Estimation:
 An Efficient Semi-Supervised Deep Neural Network Approach](https://arxiv.org/pdf/1803.09719.pdf) - Smolyanskiy, N.
@@ -33,4 +34,12 @@ Measurements](https://arxiv.org/pdf/1809.07677.pdf)
     * [Nick Roy, MIT](https://groups.csail.mit.edu/rrg/)
     * [Kostas Alexis, University of Nevada, Reno](https://www.autonomousrobotslab.com/)
     * [Marco Pavone, Stanford](http://asl.stanford.edu/people/prof-marco-pavone/)
-    * [Mykel Kochenderfer, Stanford](http://web.stanford.edu/group/sisl/cgi-bin/wordpress/)
+    * [Mykel Kochenderfer, Stanford](http://web.stanford.edu/group/sisl/cgi-bin/wordpress/) 
+    * [DeepMind, Google](https://deepmind.com/research/publications/)
+    
+# Books
+* [Deep Learning](https://www.deeplearningbook.org/)
+* [Elements of Statistical Learning](https://web.stanford.edu/~hastie/Papers/ESLII.pdf) - Trevor Hastie
+* [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/ISLR%20Seventh%20Printing.pdf) - Gareth James
+* [Probabilistic Robotics](https://docs.ufpr.br/~danielsantos/ProbabilisticRobotics.pdf) - Sebastian Thrun
+* [Nonlinear Systems](https://abrarhashmi.files.wordpress.com/2017/03/hassan-k-khalil-nonlinear-systems-prentice-hall-2002.pdf) - Hassan Khalil
