@@ -1,3 +1,4 @@
+# try to start an empty environment first before starting the rotor_s simulation platform
 roslaunch gazebo_ros empty_world.launch
 roslaunch rotors_gazebo mav_hovering_example.launch
 
