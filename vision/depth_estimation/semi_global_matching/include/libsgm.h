@@ -135,3 +135,4 @@ namespace sgm {
 }
 
 #include "libsgm_wrapper.h"
+#include "conversion.h"

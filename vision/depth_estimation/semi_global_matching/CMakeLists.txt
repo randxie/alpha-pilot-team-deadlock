@@ -5,7 +5,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
-option(ENABLE_SAMPLES       "Build samples" ON)
+option(ENABLE_SAMPLES       "Build samples" OFF)
 option(ENABLE_TESTS         "Test library" OFF)
 option(LIBSGM_SHARED        "Build a shared library" OFF)
 option(BUILD_OPENCV_WRAPPER "Make library compatible with cv::Mat and cv::cuda::GpuMat of OpenCV" ON)
