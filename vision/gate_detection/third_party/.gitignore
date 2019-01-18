@@ -1,0 +1,5 @@
+*
+
+# only keep this file
+!.gitignore
+!README.md
