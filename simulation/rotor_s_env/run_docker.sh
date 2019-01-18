@@ -14,8 +14,10 @@ nvidia-docker run -it \
 -v /dev/shm:/dev/shm \
 -v /etc/machine-id:/etc/machine-id \
 -v /etc/localtime:/etc/localtime \
--v $PWD:/shared \
+-v ~/alpha-pilot:/shared \
 --net=host \
+--env ROS_MASTER_URI=http://172.17.0.1:11311 \
+--env ROS_IP=172.17.0.1 \
 -e "DISPLAY=unix:1" -v="/tmp/.X11-unix:/tmp/.X11-unix:rw" --privileged \
  alphapilot:1.0
 
