@@ -1,3 +1,6 @@
 [submodule "vision/gate_detection/third_party/models"]
 	path = vision/gate_detection/third_party/models
 	url = git@github.com:tensorflow/models.git
+[submodule "simulation/flight_goggle/FlightGogglesClientBindings"]
+	path = simulation/flight_goggle/FlightGogglesClientBindings
+	url = https://github.com/AgileDrones/FlightGogglesClientBindings.git
