@@ -14,3 +14,7 @@ Note:
 * Run the code with GPUs. 
 * Use anaconda to manage environment.
 * Use Python 3.6
+* The tfrecord should matches with COCO format. Check src/convert_train_val_to_tfrecord.py to understand the conversion process.
+
+## Resources
+data_exploration.ipynb gives an example of how to interact with tfrecords. 
