@@ -15,3 +15,5 @@ Tasks for qualifier:
 * Code Generation
     * Use TVM to generate optimized embedded code
     * Or probably TensorRT that's used in Jetson
+* SLAM
+    * Visual inertial odometry (use VIO-MONO)
