@@ -19,6 +19,51 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 message(STATUS "Building with the following extra flags: ${CMAKE_CXX_FLAGS}")
 
 # --------------------------------------------------------------------------------
+# External packages
+# --------------------------------------------------------------------------------
+set(COMPILE_ROSCLIENT OFF)
+
+# Fix cuda linking issues
+set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+
+# Find CUDA
+find_package(CUDA)
+
+# Find OpenCV
+find_package( OpenCV REQUIRED )
+
+# Find Eigen
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+
+# Only compile ROS bindings if asked.
+if(NOT COMPILE_ROSCLIENT)
+  message(STATUS "Not building ROSClient since COMPILE_ROSCLIENT=OFF. Edit the top level CMakeLists.txt to compile ROS bindings.")
+  set(COMPILE_ROSCLIENT OFF)
+else()
+  message(STATUS "COMPILE_ROSCLIENT=ON, so building ROSClient.")
+  
+  # Init Catkin
+  find_package(catkin REQUIRED COMPONENTS
+    roscpp
+    rospy
+    std_msgs
+    tf
+    tf2
+    nav_msgs
+    sensor_msgs
+    geometry_msgs
+  )
+  catkin_package(
+    LIBRARIES simulator
+    CATKIN_DEPENDS roscpp rospy std_msgs
+    # DEPENDS system_lib
+    tf
+    tf2
+  )
+endif()
+
+# --------------------------------------------------------------------------------
 # include all files
 # --------------------------------------------------------------------------------
 # We make sure that CMake sees all the files.
@@ -27,12 +72,18 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/tests
     ${PROJECT_SOURCE_DIR}/third_party/googletest
-    ${PROJECT_SOURCE_DIR}/third_party/googletest/include)
+    ${PROJECT_SOURCE_DIR}/third_party/googletest/include
+    ${PROJECT_SOURCE_DIR}/third_party/flight_goggle_client/src)
 
 # Make variables referring to all the sources and test files.
 file(GLOB SOURCES "src/*.cc")
 file(GLOB TESTFILES "tests/*.cc")
 set(TEST_MAIN unit_tests.x)  # Default name for test executable
+
+# --------------------------------------------------------------------------------
+# Add FlightGoggleClient lib
+# --------------------------------------------------------------------------------
+add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/flight_goggle_client/src)
 
 # --------------------------------------------------------------------------------
 # Build
@@ -44,7 +95,7 @@ add_library( engine ${SOURCES} )
 # If you add more executables, copy these three lines accordingly.
 add_executable(main.x src/main.cc)   # Name of exec. and location of file.
 add_dependencies(main.x engine)       # main.cpp uses the 'engine', add dep.
-target_link_libraries(main.x engine)  # Link the executable to the 'engine'.
+target_link_libraries(main.x engine FlightGogglesClientLib pthread ${OpenCV_LIBS} ${Eigen3_LIBS})  # Link the executable to the 'engine'.
 
 # --------------------------------------------------------------------------------
 # Make Tests
