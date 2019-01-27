@@ -29,7 +29,7 @@ typedef Eigen::Quaternion<double> Quaternionx;
 typedef Eigen::Affine3d Transform3;
 typedef Eigen::Matrix4d Matrix4;
 typedef Eigen::Matrix3d Matrix3;
-inline Eigen::IOFormat CSV(PRECISION, DONTALIGNCOLS, ",", ",", "", "", "", "");
+// inline Eigen::IOFormat CSV(PRECISION, DONTALIGNCOLS, ",", ",", "", "", "", "");
 
 /**
  * @brief Converts right hand rule North East Down (NED) global poses to 

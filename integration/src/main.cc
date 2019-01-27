@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+#include "controller.h"
 #include "state_machine.h"
 #include "simulator_client.h"
 #define SHOW_DEBUG_IMAGE_FEED true
@@ -41,6 +42,10 @@ void PosePublisher(simulator::SimulatorClient *self)
 int main()
 {
   std::cout << "Running test" << std::endl;
+
+  // Add controller into system
+  controller::Controller controller_client;
+  controller_client.Init();
 
   // Create client
   simulator::SimulatorClient simulator_client;

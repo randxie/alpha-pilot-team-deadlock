@@ -6,42 +6,6 @@
 namespace simulator
 {
 
-#define SHOW_DEBUG_IMAGE_FEED true
-
-// Example consumers and publishers
-inline void ImageConsumer(SimulatorClient *self)
-{
-  while (true)
-  {
-    // Wait for render result (blocking).
-    unity_incoming::RenderOutput_t renderOutput = self->flight_goggles_.handleImageResponse();
-
-    // Display result
-    if (SHOW_DEBUG_IMAGE_FEED)
-    {
-      cv::imshow("Debug RGB", renderOutput.images[0]);
-      cv::imshow("Debug D", renderOutput.images[1]);
-      cv::waitKey(1);
-    }
-  }
-}
-
-inline void PosePublisher(SimulatorClient *self)
-{
-  // Sends render requests to FlightGoggles indefinitely
-  while (true)
-  {
-    // Update camera position
-    self->UpdateCameraTrajectory();
-    // Update timestamp of state message (needed to force FlightGoggles to rerender scene)
-    self->flight_goggles_.state.utime = self->flight_goggles_.getTimestamp();
-    // request render
-    self->flight_goggles_.requestRender();
-    // Throttle requests to framerate.
-    usleep(1e6 / self->flight_goggles_.state.maxFramerate);
-  }
-}
-
 // Constructors
 SimulatorClient::SimulatorClient()
 {
