@@ -6,14 +6,12 @@
 
 namespace controller
 {
-  constexpr int STATE_DIM = 12;
-
   class Controller
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    // Counter for keeping track of trajectory position
+    // state vector
     Eigen::VectorXd cur_state_;
 
     // constructor
@@ -21,8 +19,8 @@ namespace controller
 
     // Initialize
     void Init();
-    
-    // Add RGBD camera settings to scene.
+
+    // compute control action given desired state
     void ComputeAction(const Eigen::VectorXd& desired_state);
 
     void MockComputeAction(const Eigen::VectorXd& desired_state);

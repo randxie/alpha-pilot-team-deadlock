@@ -28,6 +28,9 @@ namespace simulator
 
     // Do a simple trajectory with the camera
     void UpdateCameraTrajectory();
+
+    // Set camera state
+    void SetCameraState(Eigen::VectorXd& desired_state);
   };
 
   inline void ImageConsumer(SimulatorClient *self);

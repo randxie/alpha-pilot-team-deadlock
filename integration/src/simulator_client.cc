@@ -50,4 +50,21 @@ void SimulatorClient::UpdateCameraTrajectory()
   flight_goggles_.setCameraPoseUsingROSCoordinates(camera_pose, 1);
 }
 
+void SimulatorClient::SetCameraState(Eigen::VectorXd& desired_state)
+{
+  auto x_pos = desired_state(0);
+  auto y_pos = desired_state(1);
+  auto z_pos = desired_state(2); // around 1.5f
+  auto phi = desired_state(3);
+
+  Transform3 camera_pose;
+  camera_pose.translation() = Vector3(desired_state(0), desired_state(1), desired_state(2)); // z is around 1.5f
+  // Set rotation matrix using pitch, roll, yaw
+  camera_pose.linear() = Eigen::AngleAxisd(phi - M_PI, Eigen::Vector3d(0, 0, 1)).toRotationMatrix();
+
+  // Populate status message with new pose
+  flight_goggles_.setCameraPoseUsingROSCoordinates(camera_pose, 0);
+  flight_goggles_.setCameraPoseUsingROSCoordinates(camera_pose, 1);
+}
+
 } // namespace simulator

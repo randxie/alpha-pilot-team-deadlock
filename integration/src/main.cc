@@ -6,7 +6,7 @@
 #define SHOW_DEBUG_IMAGE_FEED true
 
 // Example consumers and publishers
-void ImageConsumer(simulator::SimulatorClient *self)
+void ImageConsumer(simulator::SimulatorClient *self, controller::Controller *controller_client)
 {
   while (true)
   {
@@ -16,20 +16,51 @@ void ImageConsumer(simulator::SimulatorClient *self)
     // Display result
     if (SHOW_DEBUG_IMAGE_FEED)
     {
-      cv::imshow("Debug RGB", renderOutput.images[0]);
+      //cv::imshow("Debug RGB", renderOutput.images[0]);
       cv::imshow("Debug D", renderOutput.images[1]);
       cv::waitKey(1);
     }
   }
 }
 
-void PosePublisher(simulator::SimulatorClient *self)
+void KeyboardPublisher(controller::Controller *controller_client)
+{
+  // system("stty raw"); 
+  while (true)
+  {
+    char c = getchar();
+    switch(c) {
+      case 'w': controller_client->cur_state_(2) += 0.1;
+                break;
+      case 's': controller_client->cur_state_(2) -= 0.1;
+                break;
+      case 'a': controller_client->cur_state_(0) += 0.1;
+                break;
+      case 'd': controller_client->cur_state_(0) -= 0.1;
+                break;
+      case 'f': controller_client->cur_state_(1) -= 0.1;
+                break;
+      case 'b': controller_client->cur_state_(1) += 0.1;
+                break;
+      case 'l': controller_client->cur_state_(3) += 0.1;
+                break;
+      case 'r': controller_client->cur_state_(3) -= 0.1;
+                break;
+    }
+  }
+  // system("stty cooked"); 
+}
+
+void PosePublisher(simulator::SimulatorClient *self, controller::Controller *controller_client)
 {
   // Sends render requests to FlightGoggles indefinitely
+  Eigen::VectorXd desired_state(12);
+  desired_state << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
   while (true)
   {
     // Update camera position
-    self->UpdateCameraTrajectory();
+    self->SetCameraState(controller_client->cur_state_);
+
     // Update timestamp of state message (needed to force FlightGoggles to rerender scene)
     self->flight_goggles_.state.utime = self->flight_goggles_.getTimestamp();
     // request render
@@ -65,14 +96,17 @@ int main()
     "FPS_Warehouse_Night",
   ]
    */
-  simulator_client.flight_goggles_.state.sceneFilename = "Butterfly_World";
+  simulator_client.flight_goggles_.state.sceneFilename = "Hazelwood_Loft_Full_Day";
 
   // Fork sample render request thread
   // will request a simple circular trajectory
-  std::thread pose_publisher_thread(PosePublisher, &simulator_client);
+  std::thread pose_publisher_thread(PosePublisher, &simulator_client, &controller_client);
 
   // Fork a sample image consumer thread
-  std::thread image_consumer_thread(ImageConsumer, &simulator_client);
+  std::thread image_consumer_thread(ImageConsumer, &simulator_client, &controller_client);
+
+  // keyboard event
+  std::thread keyboard_thread(KeyboardPublisher, &controller_client);
 
   // Spin
   while (true)
