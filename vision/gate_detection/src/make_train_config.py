@@ -2,7 +2,7 @@ import os
 from .common import PROJECT_PATH
 from .common import SRC_PATH
 
-MODEL_NAME = 'ssd-resnet50-v1-fpn'
+MODEL_NAME = 'ssd-mobilenet-v1-fpn'
 
 with open(os.path.join(SRC_PATH, "configs/%s/template.config" % MODEL_NAME), 'r') as f:
   config = f.readlines()

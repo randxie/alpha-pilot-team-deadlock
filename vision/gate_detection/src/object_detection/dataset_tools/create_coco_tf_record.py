@@ -139,9 +139,9 @@ def create_tf_example(image,
       num_annotations_skipped += 1
       continue
 
-    # TODO: remove hard-coded category class.
+    # TODO: remove hard code category class.
     category_id = int(object_annotations['category_id'])
-    if category_id != 10:
+    if category_id != 1:
       continue
 
     xmin.append(float(x) / image_width)
@@ -150,7 +150,7 @@ def create_tf_example(image,
     ymax.append(float(y + height) / image_height)
     is_crowd.append(object_annotations['iscrowd'])
     category_ids.append(category_id)
-    category_names.append(category_index[category_id]['name'].encode('utf8'))
+    category_names.append(category_index[category_id-1]['name'].encode('utf8'))
     area.append(object_annotations['area'])
 
     if include_masks:

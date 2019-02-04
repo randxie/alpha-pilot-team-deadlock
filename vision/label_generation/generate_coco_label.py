@@ -68,7 +68,7 @@ class AlphaPilotAutoGenLabel(object):
                      "height": img_height,
                      "width": img_width})
 
-      annotations.append({"area": np.float(),
+      annotations.append({"area": np.float(bbox_w * bbox_h),
                           "iscrowd": 0,
                           "image_id": img_id + 1,
                           "bbox": bbox,
