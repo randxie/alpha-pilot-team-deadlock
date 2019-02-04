@@ -123,4 +123,4 @@ class FastSiftLabeller(object):
 
 if __name__ == '__main__':
   matcher_obj = FastSiftLabeller()
-  matcher_obj.generate_labels(visualize=False)
+  matcher_obj.generate_labels(visualize=True)
