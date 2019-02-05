@@ -34,6 +34,8 @@ message PreprocessingStep {
     RandomRotation90 random_rotation90 = 26;
     RGBtoGray rgb_to_gray = 27;
     ConvertClassLogitsToSoftmax convert_class_logits_to_softmax = 28;
+    RandomRotateAlongY random_rotate_along_y_axis = 29;
+    RandomBlur random_motion_blur = 30;
   }
 }
 
@@ -62,6 +64,14 @@ message RandomHorizontalFlip {
   // keypoint_flip_permutation: 5
   // keypoint_flip_permutation: 4
   repeated int32 keypoint_flip_permutation = 1;
+}
+
+message RandomRotateAlongY {
+
+}
+
+message RandomBlur {
+
 }
 
 // Randomly vertically flips the image and detections 50% of the time.
