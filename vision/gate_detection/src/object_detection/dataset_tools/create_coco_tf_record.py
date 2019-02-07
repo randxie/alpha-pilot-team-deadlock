@@ -31,6 +31,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import cv2
 import hashlib
 import io
 import json
@@ -77,7 +78,6 @@ def create_tf_example(image,
                       image_dir,
                       category_index,
                       include_masks=False,
-                      sess=None,
                       augmentation_idx=0):
   """Converts image and annotations to a tf.Example proto.
 
@@ -124,30 +124,32 @@ def create_tf_example(image,
   image = PIL.Image.open(encoded_jpg_io)
 
   if augmentation_idx == 1:
-    image = np.array(image)
-    image = sess.run(random_motion_blur(image, probability=1))
+    kernel_size = 15
+    kernel_motion_blur = np.zeros((kernel_size, kernel_size))
+    kernel_motion_blur[int((kernel_size - 1) / 2), :] = np.ones(kernel_size)
+    kernel_motion_blur = kernel_motion_blur / kernel_size
+
+    # applying the kernel to the input image
+    image = cv2.filter2D(np.array(image), -1, kernel_motion_blur)
+
     pil_image = PIL.Image.fromarray(image)
     output_io = io.BytesIO()
     pil_image.save(output_io, format='PNG')
     encoded_jpg = output_io.getvalue()
 
   if augmentation_idx == 2:
-    theta = 0.6
-    image = np.array(image)
-    transforms = tf.convert_to_tensor(
-      [1.0 / tf.cos(theta), 0, -(1.0 - tf.cos(theta)) * image.shape[1] / 2 / tf.cos(theta), 0, 1, 0, 0, 0])
-    image = sess.run(tf.contrib.image.transform(image, transforms))
-    pil_image = PIL.Image.fromarray(image)
-    output_io = io.BytesIO()
-    pil_image.save(output_io, format='PNG')
-    encoded_jpg = output_io.getvalue()
+    theta = 0.75
 
-  if augmentation_idx == 3:
-    theta = 0.85
     image = np.array(image)
-    transforms = tf.convert_to_tensor(
-      [1.0 / tf.cos(theta), 0, -(1.0 - tf.cos(theta)) * image.shape[1] / 2 / tf.cos(theta), 0, 1, 0, 0, 0])
-    image = sess.run(tf.contrib.image.transform(image, transforms))
+    h, w, _ = image.shape
+
+    t_fn = lambda x: (x - w / 2.0) * np.cos(theta) + w / 2.0
+
+    src_points = np.float32([[0, 0], [h - 1, 0], [0, w - 1], [h - 1, w - 1]])
+    dst_points = np.float32([[t_fn(0), 0], [t_fn(h - 1.0), 0], [t_fn(0), w - 1], [t_fn(h - 1.0), w - 1]])
+    projective_matrix = cv2.getPerspectiveTransform(src_points, dst_points)
+    image = cv2.warpPerspective(image, projective_matrix, (w, h))
+
     pil_image = PIL.Image.fromarray(image)
     output_io = io.BytesIO()
     pil_image.save(output_io, format='PNG')
@@ -186,13 +188,6 @@ def create_tf_example(image,
 
     if augmentation_idx == 2:
       theta = 0.6
-      img_xmin = (img_xmin - 0.5) * np.cos(theta) + 0.5
-      img_xmax = (img_xmax - 0.5) * np.cos(theta) + 0.5
-      img_ymin = img_ymin
-      img_ymax = img_ymax
-
-    if augmentation_idx == 3:
-      theta = 0.85
       img_xmin = (img_xmin - 0.5) * np.cos(theta) + 0.5
       img_xmax = (img_xmax - 0.5) * np.cos(theta) + 0.5
       img_ymin = img_ymin
@@ -300,7 +295,6 @@ def _create_tf_record_from_coco_annotations(
                     missing_annotation_count)
 
     total_num_annotations_skipped = 0
-    sess = tf.Session()
     for idx, image in enumerate(images):
       if idx % 100 == 0:
         tf.logging.info('On image %d of %d', idx, len(images))
@@ -315,7 +309,7 @@ def _create_tf_record_from_coco_annotations(
       # add augmentations
       # add motion blur
       _, tf_example, num_annotations_skipped = create_tf_example(
-          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=1, sess=sess)
+          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=1)
       if tf_example:
         total_num_annotations_skipped += num_annotations_skipped
         shard_idx = idx % num_shards
@@ -323,14 +317,7 @@ def _create_tf_record_from_coco_annotations(
 
       # add rotation
       _, tf_example, num_annotations_skipped = create_tf_example(
-          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=2, sess=sess)
-      if tf_example:
-        total_num_annotations_skipped += num_annotations_skipped
-        shard_idx = idx % num_shards
-        output_tfrecords[shard_idx].write(tf_example.SerializeToString())
-
-      _, tf_example, num_annotations_skipped = create_tf_example(
-          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=3, sess=sess)
+          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=2)
       if tf_example:
         total_num_annotations_skipped += num_annotations_skipped
         shard_idx = idx % num_shards
