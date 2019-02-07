@@ -880,7 +880,6 @@ def random_motion_blur(image,
   Returns:
     image: image which is the same shape as input image.
   """
-
   def _gaussian_kernel(size: int,
                        mean: float,
                        std: float,
@@ -895,7 +894,7 @@ def random_motion_blur(image,
     return gauss_kernel / tf.reduce_sum(gauss_kernel)
 
   def _add_motion_blur(image):
-    gauss_kernel = _gaussian_kernel(10, 0.0, 2.0)
+    gauss_kernel = _gaussian_kernel(15, 0.0, 4.0)
     gauss_kernel = gauss_kernel[:, :, tf.newaxis, tf.newaxis]
 
     image = tf.cast(image[:, :, :], tf.float32)
@@ -909,7 +908,7 @@ def random_motion_blur(image,
 
     image = tf.stack([image_r, image_g, image_b], axis=3)
 
-    return tf.cast(image[0, :, :, :, 0], tf.float32)
+    return tf.cast(image[0, :, :, :, 0], tf.uint8)
 
   with tf.name_scope('RandomBlur', values=[image]):
     # random variable defining whether to change to grayscale or not
@@ -948,6 +947,8 @@ def _rot_along_y_axis(boxes, theta):
 
 def random_rotate_along_y_axis(image,
                                boxes=None,
+                               probability=0.5,
+                               angle=None,
                                seed=None):
   """Rotate around y axis
   """
@@ -964,6 +965,7 @@ def random_rotate_along_y_axis(image,
     image_rotated = tf.contrib.image.transform(image, transforms)
     return image_rotated
 
+  tf.logging.info("add random rotate along y axis.")
   with tf.name_scope('RandomRotateAlongY', values=[image, boxes]):
     result = []
     # random variable defining whether to do flip or not
@@ -972,10 +974,10 @@ def random_rotate_along_y_axis(image,
       generator_func,
       preprocessor_cache.PreprocessorCache.ROTATE_ALONG_Y,
       None)
-    do_rotate_image_along_y_random = tf.greater(do_rotate_image_along_y_random_val, 0.5)
+    do_rotate_image_along_y_random = tf.greater(do_rotate_image_along_y_random_val, 1-probability)
 
     # flip image
-    theta = tf.multiply(2, tf.subtract(do_rotate_image_along_y_random_val, 0.5))
+    theta = angle or tf.multiply(2, tf.subtract(do_rotate_image_along_y_random_val, 0.5))
     image = tf.cond(do_rotate_image_along_y_random, lambda: _rotate_image_along_y(image, theta), lambda: image)
     result.append(image)
 
