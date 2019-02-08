@@ -25,30 +25,37 @@ void ImageConsumer(simulator::SimulatorClient *self, controller::Controller *con
 
 void KeyboardPublisher(controller::Controller *controller_client)
 {
-  // system("stty raw"); 
   while (true)
   {
     char c = getchar();
-    switch(c) {
-      case 'w': controller_client->cur_state_(2) += 0.1;
-                break;
-      case 's': controller_client->cur_state_(2) -= 0.1;
-                break;
-      case 'a': controller_client->cur_state_(0) += 0.1;
-                break;
-      case 'd': controller_client->cur_state_(0) -= 0.1;
-                break;
-      case 'f': controller_client->cur_state_(1) -= 0.1;
-                break;
-      case 'b': controller_client->cur_state_(1) += 0.1;
-                break;
-      case 'l': controller_client->cur_state_(3) += 0.1;
-                break;
-      case 'r': controller_client->cur_state_(3) -= 0.1;
-                break;
+    switch (c)
+    {
+    case 'w':
+      controller_client->cur_state_(2) += 0.1;
+      break;
+    case 's':
+      controller_client->cur_state_(2) -= 0.1;
+      break;
+    case 'a':
+      controller_client->cur_state_(0) += 0.1;
+      break;
+    case 'd':
+      controller_client->cur_state_(0) -= 0.1;
+      break;
+    case 'f':
+      controller_client->cur_state_(1) -= 0.1;
+      break;
+    case 'b':
+      controller_client->cur_state_(1) += 0.1;
+      break;
+    case 'l':
+      controller_client->cur_state_(3) += 0.1;
+      break;
+    case 'r':
+      controller_client->cur_state_(3) -= 0.1;
+      break;
     }
   }
-  // system("stty cooked"); 
 }
 
 void PosePublisher(simulator::SimulatorClient *self, controller::Controller *controller_client)
@@ -96,7 +103,7 @@ int main()
     "FPS_Warehouse_Night",
   ]
    */
-  simulator_client.flight_goggles_.state.sceneFilename = "Hazelwood_Loft_Full_Day";
+  simulator_client.flight_goggles_.state.sceneFilename = "Butterfly_World";
 
   // Fork sample render request thread
   // will request a simple circular trajectory
