@@ -1,0 +1,4 @@
+This document contains starter script that generates random submission. You will have to modify the generate_results.py to implement a class that takes in image as input and returns four corners of flyable region. You can run the script using 'python generate_submission.py'
+
+
+

@@ -1,0 +1,6 @@
+This folder contains scripts that ingests ground truth image labels and predicted labels and returns a mean average precision score. 
+There are 2 files in this folder,
+- scorer.py : contains code that defines a mean average precision (mAP) scorer class
+- score_detections.py takes ground truth and predicted labels as inputs and prints mean average precision to the screen. 
+
+Usage 'python score_detections.py -g {ground truth json} -p {prediction json}'
