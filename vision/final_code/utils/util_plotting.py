@@ -21,11 +21,11 @@ def plot_bbox(img, bbox, color='c'):
   plt.axis('off')
 
 
-def plot_GT_pred(img, bbox, lbl, bbox_gt, color='c', color_gt='g'):
+def plot_GT_pred(img, bbox, bbox_gt, color='c', color_gt='g'):
   plt.imshow(img)
   for i_ in range(len(bbox)):
     bb_i = bbox[i_]
-    lbl_i = lbl[i_]
+    #lbl_i = lbl[i_]
     x1 = bb_i[0]
     y1 = bb_i[1]
     x2 = bb_i[2]
@@ -38,8 +38,8 @@ def plot_GT_pred(img, bbox, lbl, bbox_gt, color='c', color_gt='g'):
              [y1, y2, y3, y4, y1],
              color=color, linewidth=3
              )
-    str_test = 'p = ' + str(round(lbl_i[2], 3))
-    plt.text(x2, y2, str_test, color=color)
+    #str_test = 'p = ' + str(round(lbl_i[2], 3))
+    #plt.text(x2, y2, str_test, color=color)
   for bb_i in bbox_gt:
     x1 = bb_i[0]
     y1 = bb_i[1]

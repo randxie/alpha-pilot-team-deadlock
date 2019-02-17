@@ -1,3 +1,4 @@
+import cv2
 import json
 import matplotlib
 import matplotlib.pyplot as plt
@@ -11,30 +12,42 @@ from object_detection.utils import visualization_utils as vis_util
 from tensorflow.contrib import predictor
 
 from shapely.geometry import Polygon
+from utils import util_plotting
 
 matplotlib.use('TKAgg')
 
 CATEGORY_INDEX = {1: {'name': 'gate'}}
 
+# validate this assumption with competition host
+ORIGINAL_IMAGE_WIDTH = 1296
+ORIGINAL_IMAGE_HEIGHT = 864
+
 
 class Predictor(object):
 
-  def __init__(self, model_dir, image_dir, batch_size=1):
+  def __init__(self, model_dir, image_dir, batch_size=1, prefetch_buffer_size=4, ground_truth_dict=None):
+    self.model_dir = model_dir
+    self.image_dir = image_dir
     self.predict_fn = predictor.from_saved_model(model_dir)
     self.filename_dataset = tf.data.Dataset.list_files(os.path.join(image_dir, '*.JPG'))
     self.batch_size = batch_size
     self.flyable_region_detector = None
+    self.prefetch_buffer_size = prefetch_buffer_size
+    self.ground_truth_dict = ground_truth_dict
+    self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
 
   def run_inference(self, visualize=False):
     # iterator to get image array
     image_data = self.filename_dataset.map(
       lambda x: tf.image.decode_jpeg(tf.read_file(x)))
     image_data.batch(self.batch_size)
+    image_data.prefetch(self.prefetch_buffer_size)
     image_iterator = image_data.make_one_shot_iterator()
 
     # iterator to get filenames
     filename_data = self.filename_dataset
     filename_data.batch(self.batch_size)
+    filename_data.prefetch(self.prefetch_buffer_size)
     filename_iterator = filename_data.make_one_shot_iterator()
 
     next_images = image_iterator.get_next()
@@ -60,43 +73,49 @@ class Predictor(object):
           output_array = np.zeros(9)
           output_array[-1] = output_dict['detection_scores'][0]
 
-          img_height, img_width, _ = image_array[0].shape
           if self.flyable_region_detector:
+            # TODO: Craig to improve flyable region detector
+            # TODO: Akita to test convex hull algorithms
             coordinates = self.flyable_region_detector.detect(image_array[0], output_dict)
           else:
-            coordinates = self._create_coordinates(output_dict['detection_boxes'][0], img_width, img_height)
+            coordinates = self._create_coordinates(output_dict['detection_boxes'][0], img_width=ORIGINAL_IMAGE_WIDTH,
+                                                   img_height=ORIGINAL_IMAGE_HEIGHT)
 
           output_array[0:8] = coordinates
 
           # store necessary information
           toc = time.monotonic()
-          self.pred_dict[cur_filename] = output_array.tolist()
+          self.pred_dict[cur_filename] = [output_array.tolist()]
           self.time_all.append(toc - tic)
 
-          # visualize if needed
+          # visualize original images as well as bounding box
           if visualize:
-            self._visualize_image_with_bbox(image_array[0], output_dict, title=cur_filename)
+            original_image = cv2.imread(os.path.join(self.image_dir, cur_filename))
+            original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+            if self.ground_truth_dict:
+              if cur_filename in self.ground_truth_dict:
+                util_plotting.plot_GT_pred(original_image, [coordinates], self.ground_truth_dict[cur_filename])
+            else:
+              util_plotting.plot_bbox(original_image, [coordinates])
+            plt.show()
             plt.close()
 
       except tf.errors.OutOfRangeError:
         pass
 
-  def _create_coordinates(self, bbox, img_width, img_height):
+  def _create_coordinates(self, bbox, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT):
     """Create required output array.
 
     Assume only one gate in the image, so the highest probability bounding box is taken.
 
     :param bbox: Normalized bounding box
-    :param prob: Bounding box probably
     :return:
     """
-    x1, y1, w, h = bbox
-    x1 = x1 * img_width
-    x2 = (x1 + w) * img_width
-    y1 = y1 * img_height
-    y2 = (y1 + h) * img_height
-
-    return np.array([x1, y1, x1, y2, x2, y2, x1, y2])
+    ymin = bbox[0] * img_height
+    xmin = bbox[1] * img_width
+    ymax = bbox[2] * img_height
+    xmax = bbox[3] * img_width
+    return np.array([xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]).astype(np.int)
 
   def _reformat_output_dict(self, output_dict):
     """Extract first element out and convert to desired data type.
@@ -135,46 +154,13 @@ class Predictor(object):
         plt.title(title)
       plt.show()
 
-  def output_submission_file(self):
-    mean_time = np.mean(self.time_all)
+  def output_submission_file(self, output_filename='final_submission.json'):
+    avg_time = np.mean(self.time_all)
     ci_time = 1.96 * np.std(self.time_all)
-    print('Time stats -- Mean: %f, Std: %f' % (mean_time, ci_time))
-    with open('first_submission.json', 'w') as f:
+    print('Time stats -- Mean: %f, Std: %f' % (avg_time, ci_time))
+    with open(output_filename, 'w') as f:
       json.dump(self.pred_dict, f)
-
-  """
-  def create_poly(self, box):
-    x1, y1, x2, y2, x3, y3, x4, y4 = box
-    return [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)]
-
-  def calculate_iou(self, polygon1, polygon2):
-    polygon1 = Polygon(polygon1)
-    polygon2 = Polygon(polygon2)
-    polygon1 = polygon1.buffer(0)
-    polygon2 = polygon2.buffer(0)
-    intersection = polygon1.intersection(polygon2)
-    union = polygon1.area + polygon2.area - intersection.area
-    return (intersection.area / union)
-
-  def iou_calc(self, bbox, gtruth):
-    #     Returns iou value
-    [ymin, xmin, ymax, xmax] = bbox
-    ymin = image.shape[0] * ymin
-    ymax = image.shape[0] * ymax
-    xmin = image.shape[1] * xmin
-    xmax = image.shape[1] * xmax
-
-    [ymin1, xmin1, ymax1, xmax1] = gtruth
-    ymin1 = image.shape[0] * ymin1
-    ymax1 = image.shape[0] * ymax1
-    xmin1 = image.shape[1] * xmin1
-    xmax1 = image.shape[1] * xmax1
-
-    det_box = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
-    truth_box = [xmin1, ymin1, xmax1, ymin1, xmax1, ymax1, xmin1, ymax1]
-    iou = self.calculate_iou(self.create_poly(det_box), self.create_poly(truth_box))
-    return (iou)
-  """
+    self.avg_time = avg_time
 
 
 if __name__ == '__main__':
@@ -182,4 +168,4 @@ if __name__ == '__main__':
   image_dir = 'training/images'
   img_predictor = Predictor(model_dir, image_dir, batch_size=1)
   img_predictor.run_inference(visualize=False)
-  img_predictor.output_submission_file()
+  img_predictor.output_submission_file(output_filename='submission_all.json')
