@@ -104,7 +104,7 @@ class Predictor(object):
               util_plotting.plot_bbox(original_image, [coordinates])
             plt.show()
             plt.close()
-            
+
       except tf.errors.OutOfRangeError:
         pass
 
