@@ -39,7 +39,8 @@ class mAPScorer():
     IOU_all = np.linspace(0.05, 0.95, 10)
     sumAP = 0
     for iou_threshold in IOU_all:
-      sumAP += self.IOU_mAP(GT_data, pred_data, iou_threshold)
+      curmAP = self.IOU_mAP(GT_data, pred_data, iou_threshold)
+      sumAP += curmAP
     mAP = sumAP / len(IOU_all)
     return mAP
 
@@ -52,9 +53,11 @@ class mAPScorer():
       # get prediction boxes stored as Nx9 np array x1,y1,....,x4,y4, confidence
       pred_box = pred_data[img_key]
       # if a ground truth box is present:
-      if (len(pred_box) > 0):
+      try:
         tp_fp_cf_i = self.metrics(np.array(GT_box), np.array(pred_box), IOU_threshold)
         tp_fp_cf += tp_fp_cf_i
+      except:
+        print(img_key)
 
     mAP, _ = self.map_eleven(tp_fp_cf, n_GT)
     return mAP
