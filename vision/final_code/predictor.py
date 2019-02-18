@@ -25,13 +25,14 @@ ORIGINAL_IMAGE_HEIGHT = 864
 
 class Predictor(object):
 
-  def __init__(self, model_dir, image_dir, batch_size=1, prefetch_buffer_size=4, ground_truth_dict=None):
+  def __init__(self, model_dir, image_dir, batch_size=1, prefetch_buffer_size=4, ground_truth_dict=None,
+               flyable_region_detector=None):
     self.model_dir = model_dir
     self.image_dir = image_dir
     self.predict_fn = predictor.from_saved_model(model_dir)
     self.filename_dataset = tf.data.Dataset.list_files(os.path.join(image_dir, '*.JPG'))
     self.batch_size = batch_size
-    self.flyable_region_detector = None
+    self.flyable_region_detector = flyable_region_detector
     self.prefetch_buffer_size = prefetch_buffer_size
     self.ground_truth_dict = ground_truth_dict
     self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
@@ -59,7 +60,6 @@ class Predictor(object):
     with tf.Session() as sess:
       try:
         while True:
-          tic = time.monotonic()
           # Get an image tensor and print its value.
           cur_filename = sess.run(next_filenames)
           cur_filename = cur_filename.decode("utf-8").split('/')[-1]
@@ -69,6 +69,7 @@ class Predictor(object):
           original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
           image_array = [original_image]
 
+          tic = time.monotonic()
           output_dict = self.predict_fn({'inputs': image_array})
           output_dict = self._reformat_output_dict(output_dict)
 
@@ -76,13 +77,15 @@ class Predictor(object):
           output_array = np.zeros(9)
           output_array[-1] = output_dict['detection_scores'][0]
 
+          bbox_coordinate = self._create_coordinates(output_dict['detection_boxes'][0], img_width=ORIGINAL_IMAGE_WIDTH,
+                                                   img_height=ORIGINAL_IMAGE_HEIGHT)
           if self.flyable_region_detector:
             # TODO: Craig to improve flyable region detector
             # TODO: Akita to test convex hull algorithms
-            coordinates = self.flyable_region_detector.detect(image_array[0], output_dict)
+            bbox = [bbox_coordinate[1], bbox_coordinate[0], bbox_coordinate[3], bbox_coordinate[4]]
+            coordinates = self.flyable_region_detector.detect(image_array[0], bbox)
           else:
-            coordinates = self._create_coordinates(output_dict['detection_boxes'][0], img_width=ORIGINAL_IMAGE_WIDTH,
-                                                   img_height=ORIGINAL_IMAGE_HEIGHT)
+            coordinates = bbox_coordinate
 
           output_array[0:8] = coordinates
 
