@@ -20,7 +20,7 @@ def convert_gate_data_to_tfrecord():
     ann_file = os.path.join(DATA_DIR, 'gate_%s.json' % data_type)
     image_dir = os.path.join(DATA_DIR, 'train')
     output_dir = os.path.join(IMG_DIR, data_type)
-    num_shards = 10 if data_type == 'train' else 4
+    num_shards = 20 if data_type == 'train' else 8
     _create_tf_record_from_coco_annotations(ann_file, image_dir, output_dir, False, num_shards)
 
 if __name__ == '__main__':

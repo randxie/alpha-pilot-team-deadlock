@@ -10,7 +10,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 LABEL_DIR = os.path.join(PROJECT_DIR, 'label')
 TEMPLATE_DIR = os.path.join(PROJECT_DIR, 'template')
 DATA_DIR = os.path.join(PROJECT_DIR, 'data')
-
+LABEL_FILENAME = 'training_gt_bbox.json' # was 'sift_auto_generated_label.json'
 
 class AlphaPilotAutoGenLabel(object):
   """Convert annotations to COCO Json format."""
@@ -28,10 +28,10 @@ class AlphaPilotAutoGenLabel(object):
 
     self.categories = [{"id": 0, "name": "gate", "supercategory": "racing"}]
     self.cat2id = {cat["name"]: cat_id + 1 for cat_id, cat in enumerate(self.categories)}
-    self.labels = json.load(open(os.path.join(LABEL_DIR, 'sift_auto_generated_label.json'), 'r'))
+    self.labels = json.load(open(os.path.join(LABEL_DIR, LABEL_FILENAME), 'r'))
 
     all_img_list = list(self.labels.keys())
-    splited_img_list = {'train': all_img_list[0:4000], 'val': all_img_list[4000:]}
+    splited_img_list = {'train': all_img_list[0:8500], 'val': all_img_list[8500:]}
 
     for mode in ["train", "val"]:
       images, annotations = self.get_image_annotation_pairs(splited_img_list[mode])
