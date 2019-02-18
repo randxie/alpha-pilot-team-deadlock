@@ -61,11 +61,14 @@ class Predictor(object):
         while True:
           tic = time.monotonic()
           # Get an image tensor and print its value.
-          image_array = sess.run([next_images])
           cur_filename = sess.run(next_filenames)
           cur_filename = cur_filename.decode("utf-8").split('/')[-1]
 
           # generate prediction
+          original_image = cv2.imread(os.path.join(self.image_dir, cur_filename))
+          original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+          image_array = [original_image]
+
           output_dict = self.predict_fn({'inputs': image_array})
           output_dict = self._reformat_output_dict(output_dict)
 
@@ -90,16 +93,18 @@ class Predictor(object):
 
           # visualize original images as well as bounding box
           if visualize:
+            # use real coordinates
             original_image = cv2.imread(os.path.join(self.image_dir, cur_filename))
             original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
             if self.ground_truth_dict:
               if cur_filename in self.ground_truth_dict:
-                util_plotting.plot_GT_pred(original_image, [coordinates], self.ground_truth_dict[cur_filename])
+                util_plotting.plot_GT_pred(image_array[0], [coordinates], self.ground_truth_dict[cur_filename])
             else:
               util_plotting.plot_bbox(original_image, [coordinates])
             plt.show()
             plt.close()
-
+            
       except tf.errors.OutOfRangeError:
         pass
 
@@ -115,7 +120,7 @@ class Predictor(object):
     xmin = bbox[1] * img_width
     ymax = bbox[2] * img_height
     xmax = bbox[3] * img_width
-    return np.array([xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]).astype(np.int)
+    return np.array([xmin, ymin, xmin, ymax, xmax, ymax, xmax, ymin]).astype(np.int)
 
   def _reformat_output_dict(self, output_dict):
     """Extract first element out and convert to desired data type.
