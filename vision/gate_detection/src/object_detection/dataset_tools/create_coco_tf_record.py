@@ -208,7 +208,7 @@ def create_tf_example(image,
     area.append(object_annotations['area'])
 
     if include_masks:
-      run_len_encoding = mask.frPyObjects(object_annotations['segmentation'],
+      run_len_encoding = mask.frPyObjects([object_annotations['segmentation']],
                                           image_height, image_width)
       binary_mask = mask.decode(run_len_encoding)
       if not object_annotations['iscrowd']:
@@ -256,7 +256,7 @@ def create_tf_example(image,
 
 
 def _create_tf_record_from_coco_annotations(
-    annotations_file, image_dir, output_path, include_masks, num_shards):
+    annotations_file, image_dir, output_path, include_masks, num_shards, add_rotation=True):
   """Loads COCO annotation json files and converts to tf.Record format.
 
   Args:
@@ -316,12 +316,13 @@ def _create_tf_record_from_coco_annotations(
         output_tfrecords[shard_idx].write(tf_example.SerializeToString())
 
       # add rotation
-      _, tf_example, num_annotations_skipped = create_tf_example(
-          image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=2)
-      if tf_example:
-        total_num_annotations_skipped += num_annotations_skipped
-        shard_idx = idx % num_shards
-        output_tfrecords[shard_idx].write(tf_example.SerializeToString())
+      if add_rotation:
+        _, tf_example, num_annotations_skipped = create_tf_example(
+            image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=2)
+        if tf_example:
+          total_num_annotations_skipped += num_annotations_skipped
+          shard_idx = idx % num_shards
+          output_tfrecords[shard_idx].write(tf_example.SerializeToString())
 
     tf.logging.info('Finished writing, skipped %d annotations.',
                     total_num_annotations_skipped)
