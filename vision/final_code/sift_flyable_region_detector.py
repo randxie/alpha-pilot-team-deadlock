@@ -32,7 +32,10 @@ class SiftFlyableRegionDetector(object):
     ymin, xmin, ymax, xmax = bbox
     img_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     img_to_match = img_gray[ymin:ymax, xmin:xmax]
-    kp_to_match, des_to_match = self.feature_extractor.detectAndCompute(img_to_match, None)
+    try:
+      kp_to_match, des_to_match = self.feature_extractor.detectAndCompute(img_to_match, None)
+    except:
+      print(bbox)
 
     transform, matches_mask, good_matches, succeeded = self.match_features(kp_to_match, des_to_match)
 
@@ -42,10 +45,15 @@ class SiftFlyableRegionDetector(object):
       x_c = w / 2.0
       dh = h / 2.0 / 1.4
       dw = w / 2.0 / 1.4
-      # pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
       pts = np.float32(
         [[x_c - dw, y_c - dh], [x_c - dw, y_c + dh], [x_c + dw, y_c + dh], [x_c + dw, y_c - dh]]).reshape(-1, 1, 2)
       dst = cv2.perspectiveTransform(pts, transform)
+      area = cv2.contourArea(dst)
+
+      # filter out too small region, very likely to get wrong matching
+      if area < 1000:
+        dst = []
+        succeeded = False
 
       if succeeded:
         rect = np.array(dst)[:, 0]
@@ -55,9 +63,8 @@ class SiftFlyableRegionDetector(object):
         y_max = int(np.max(rect[:, 1]))
         img_w = x_max - x_min
         img_h = y_max - y_min
-
       else:
-        raise Exception('Can not match template')
+        print('Can not match template')
 
       if succeeded and visualize:
         img_to_draw = cv2.polylines(img_to_match, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)

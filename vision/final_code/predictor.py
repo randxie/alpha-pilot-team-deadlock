@@ -77,21 +77,25 @@ class Predictor(object):
           output_array = np.zeros(9)
           output_array[-1] = output_dict['detection_scores'][0]
 
-          bbox_coordinate = self._create_coordinates(output_dict['detection_boxes'][0], img_width=ORIGINAL_IMAGE_WIDTH,
-                                                   img_height=ORIGINAL_IMAGE_HEIGHT)
-          if self.flyable_region_detector:
-            # TODO: Craig to improve flyable region detector
-            # TODO: Akita to test convex hull algorithms
-            bbox = [bbox_coordinate[1], bbox_coordinate[0], bbox_coordinate[3], bbox_coordinate[4]]
-            coordinates = self.flyable_region_detector.detect(image_array[0], bbox)
-          else:
-            coordinates = bbox_coordinate
+          if output_array[-1] > 0.3:
+            bbox_coordinate = self._create_coordinates(output_dict['detection_boxes'][0], img_width=ORIGINAL_IMAGE_WIDTH,
+                                                     img_height=ORIGINAL_IMAGE_HEIGHT)
+            if self.flyable_region_detector:
+              # TODO: Craig to improve flyable region detector
+              # TODO: Akita to test convex hull algorithms
+              bbox = [bbox_coordinate[1], bbox_coordinate[0], bbox_coordinate[3], bbox_coordinate[4]]
+              coordinates = self.flyable_region_detector.detect(image_array[0], bbox)
+            else:
+              coordinates = bbox_coordinate
 
-          output_array[0:8] = coordinates
+            output_array[0:8] = coordinates
+            output_array = output_array.tolist()
+          else:
+            output_array = []
 
           # store necessary information
           toc = time.monotonic()
-          self.pred_dict[cur_filename] = [output_array.tolist()]
+          self.pred_dict[cur_filename] = [output_array]
           self.time_all.append(toc - tic)
 
           # visualize original images as well as bounding box
