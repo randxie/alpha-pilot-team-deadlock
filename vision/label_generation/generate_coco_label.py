@@ -45,7 +45,7 @@ class AlphaPilotAutoGenLabel(object):
       with open(os.path.join(PROJECT_DIR, "annotations", "gate_" + mode + ".json"), "w") as jsonfile:
         json.dump(json_data, jsonfile, sort_keys=True, indent=4)
 
-  def get_image_annotation_pairs(self, img_list, mode='train'):
+  def get_image_annotation_pairs(self, img_list, mode='train', add_segmentation=True):
     images = []
     annotations = []
     for img_id, img_path in enumerate(img_list):
@@ -68,12 +68,16 @@ class AlphaPilotAutoGenLabel(object):
                      "height": img_height,
                      "width": img_width})
 
-      annotations.append({"area": np.float(bbox_w * bbox_h),
-                          "iscrowd": 0,
-                          "image_id": img_id + 1,
-                          "bbox": bbox,
-                          "category_id": self.cat2id['gate'],
-                          "id": img_id + 1})
+      annotation_i = {"area": np.float(bbox_w * bbox_h),
+                      "iscrowd": 0,
+                      "image_id": img_id + 1,
+                      "bbox": bbox,
+                      "category_id": self.cat2id['gate'],
+                      "id": img_id + 1}
+      if add_segmentation:
+        annotation_i['segmentation'] = label_dict.get('segmentation', None)
+      annotations.append(annotation_i)
+
     return images, annotations
 
 
@@ -83,12 +87,18 @@ if __name__ == "__main__":
   # test
   from PIL import Image
   img_idx = 0
-  labels = json.load(open(os.path.join('annotations', 'gate_train.json'), 'r'))
+  labels = json.load(open(os.path.join('annotations', 'gate_val.json'), 'r'))
 
   img_path = labels['images'][img_idx]['file_name']
   img_to_draw = cv2.imread(os.path.join('data', 'train', img_path))
   [x_min, y_min, img_w, img_h] = labels['annotations'][img_idx]['bbox']
   cv2.rectangle(img_to_draw, (x_min, y_min), (x_min + img_w, y_min + img_h), (0, 255, 0), 5)
+
+  if 'segmentation' in labels['annotations'][img_idx]:
+    pts = np.array([labels['annotations'][img_idx]['segmentation']]).astype(np.int)
+    pts = np.reshape(pts, (1, pts.size // 2, 2))
+    cv2.fillPoly(img_to_draw, pts, 128)
+
   plt.imshow(img_to_draw)
   plt.show()
 
