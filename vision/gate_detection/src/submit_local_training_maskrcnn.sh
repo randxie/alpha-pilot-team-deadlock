@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+python object_detection/model_main.py --model_dir=../results/mask-rcnn-inception-v2 --pipeline_config_path=configs/mask-rcnn-inception-v2/train.config --num_train_steps=10 --sample_1_of_n_eval_examples=1 --alsologtostderr

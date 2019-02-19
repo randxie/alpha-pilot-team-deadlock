@@ -2,7 +2,7 @@ import os
 from .common import PROJECT_PATH
 from .common import SRC_PATH
 
-MODEL_NAME = 'ssd-mobilenet-v1-fpn'
+MODEL_NAME = 'mask-rcnn-inception-v2'
 
 with open(os.path.join(SRC_PATH, "configs/%s/template.config" % MODEL_NAME), 'r') as f:
   config = f.readlines()
