@@ -89,13 +89,13 @@ class Predictor(object):
               coordinates = bbox_coordinate
 
             output_array[0:8] = coordinates
-            output_array = output_array.tolist()
+            output_array = [output_array.tolist()]
           else:
             output_array = []
 
           # store necessary information
           toc = time.monotonic()
-          self.pred_dict[cur_filename] = [output_array]
+          self.pred_dict[cur_filename] = output_array
           self.time_all.append(toc - tic)
 
           # visualize original images as well as bounding box
