@@ -51,7 +51,7 @@ class SiftFlyableRegionDetector(object):
       area = cv2.contourArea(dst)
 
       # filter out too small region, very likely to get wrong matching
-      if area < 1000:
+      if area < 500:
         dst = []
         succeeded = False
 
@@ -101,8 +101,6 @@ class SiftFlyableRegionDetector(object):
     good_matches = []
 
     for m, n in matches:
-      point_map[m] += 1
-      point_map[n] += 1
       if m.distance < 0.7 * n.distance:
         good_matches.append(m)
 
