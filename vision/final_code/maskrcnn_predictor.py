@@ -11,6 +11,8 @@ import time
 
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import visualization_utils as vis_util
+from queue import Queue
+from threading import Thread
 from tensorflow.contrib import predictor
 
 from shapely.geometry import Polygon
@@ -38,6 +40,32 @@ class MaskRCNNPredictor(object):
     self.ground_truth_dict = ground_truth_dict
     self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
 
+  def predict(self, image_array):
+    tic = time.monotonic()
+    output_dict = self.predict_fn({'inputs': image_array})
+    output_dict = self._reformat_output_dict(output_dict)
+
+    # create output array
+    output_array = np.zeros(9)
+    output_array[-1] = output_dict['detection_scores'][0]
+
+    if output_array[-1] > 0.3:
+      bbox = output_dict['detection_boxes'][0]
+      mask = output_dict['detection_masks'][0, 0, :, :]
+      coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+                                                       img_height=ORIGINAL_IMAGE_HEIGHT)
+      output_array[0:8] = coordinates
+      output_array = [output_array.tolist()]
+    else:
+      output_array = []
+      coordinates = []
+
+    # store necessary information
+    toc = time.monotonic()
+    self.time_all.append(toc - tic)
+
+    return output_array, coordinates
+
   def run_inference(self, visualize=False):
     # for getting time and predictions
     self.time_all = []
@@ -51,30 +79,8 @@ class MaskRCNNPredictor(object):
       original_image = cv2.imread(os.path.join(self.image_dir, cur_filename))
       original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
       image_array = [original_image]
-
-      tic = time.monotonic()
-      output_dict = self.predict_fn({'inputs': image_array})
-      toc = time.monotonic()
-      output_dict = self._reformat_output_dict(output_dict)
-
-      # create output array
-      output_array = np.zeros(9)
-      output_array[-1] = output_dict['detection_scores'][0]
-
-      if output_array[-1] > 0.3:
-        bbox = output_dict['detection_boxes'][0]
-        mask = output_dict['detection_masks'][0, 0, :, :]
-        coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
-                                                         img_height=ORIGINAL_IMAGE_HEIGHT)
-        output_array[0:8] = coordinates
-        output_array = [output_array.tolist()]
-      else:
-        output_array = []
-
-      # store necessary information
-
+      output_array, coordinates = self.predict(image_array)
       self.pred_dict[cur_filename] = output_array
-      self.time_all.append(toc - tic)
 
       # visualize original images as well as bounding box
       if visualize:
@@ -85,7 +91,6 @@ class MaskRCNNPredictor(object):
           util_plotting.plot_bbox(original_image, [coordinates])
         plt.show()
         plt.close()
-
 
   def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT):
     ymin = int(bbox[0] * img_height)

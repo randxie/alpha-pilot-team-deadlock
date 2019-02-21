@@ -11,8 +11,6 @@ parser.add_argument("--visualize", action='store_true', default=False, help="whe
 
 
 def score_pipeline(args):
-
-
   if args.data == 'full':
     ground_truth_filename = 'training/training_GT_labels.json'
     submission_filename = 'submission_all.json'
