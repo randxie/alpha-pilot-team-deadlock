@@ -1,6 +1,7 @@
 import argparse
 import json
 from predictor import Predictor
+from maskrcnn_predictor import MaskRCNNPredictor
 from scorer.scorer import mAPScorer
 from sift_flyable_region_detector import SiftFlyableRegionDetector
 
@@ -10,7 +11,7 @@ parser.add_argument("--visualize", action='store_true', default=False, help="whe
 
 
 def score_pipeline(args):
-  model_dir = 'weights/ssd-mobilenet'
+
 
   if args.data == 'full':
     ground_truth_filename = 'training/training_GT_labels.json'
@@ -24,9 +25,17 @@ def score_pipeline(args):
   with open(ground_truth_filename, 'r') as f:
     ground_truth_dict = json.load(f)
 
+  # First version solution
+  """
+  model_dir = 'weights/ssd-mobilenet'
   flyable_region_detector = SiftFlyableRegionDetector()
   predictor = Predictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict,
                         flyable_region_detector=flyable_region_detector)
+  """
+
+  # mask rcnn solution
+  model_dir = 'weights/maskrcnn-inception-v2'
+  predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
   predictor.run_inference(visualize=args.visualize)
   predictor.output_submission_file(output_filename=submission_filename)
 
