@@ -1,0 +1,7 @@
+flightgoggles_uav_dynamics:
+  init_pose: [18.0, -23.0, 5.3, 0.0, 0.0, 0.707, 0.707]
+challenge_name: "Challenge Final"
+timeout: 300.0
+gate_names: ['Gate10', 'Gate21', 'Gate2', 'Gate13', 'Gate9', 'Gate14', 'Gate1', 'Gate22', 'Gate15', 'Gate23', 'Gate6']
+gate_width: 0.3
+results_location: "results.yaml"
