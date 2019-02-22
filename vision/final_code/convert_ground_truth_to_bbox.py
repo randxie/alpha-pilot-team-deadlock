@@ -10,7 +10,7 @@ ORIGINAL_IMAGE_WIDTH = 1296
 ORIGINAL_IMAGE_HEIGHT = 864
 SCALE_FACTOR = 1.6
 
-ground_truth_filename = 'training/training_GT_labels.json'
+ground_truth_filename = 'training/training_GT_labels_v2.json'
 image_dir = 'training/images'
 visualize = False
 
