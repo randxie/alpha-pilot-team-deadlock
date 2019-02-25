@@ -1,7 +1,8 @@
 import argparse
 import json
-from predictor import Predictor
+from numpy import loadtxt
 from maskrcnn_predictor import MaskRCNNPredictor
+from predictor import Predictor
 from scorer.scorer import mAPScorer
 from sift_flyable_region_detector import SiftFlyableRegionDetector
 
@@ -11,7 +12,7 @@ parser.add_argument("--visualize", action='store_true', default=False, help="whe
 
 
 def score_pipeline(args):
-  if args.data == 'full':
+  if args.data == 'full' or args.data == 'val':
     ground_truth_filename = 'training/training_GT_labels.json'
     submission_filename = 'submission_all.json'
     image_dir = 'training/images'
@@ -22,6 +23,16 @@ def score_pipeline(args):
 
   with open(ground_truth_filename, 'r') as f:
     ground_truth_dict = json.load(f)
+
+  if args.data == 'val':
+    with open("training/val_images.txt", 'r') as f:
+      val_img_filenames = [line.strip('\n') for line in f.readlines()]
+
+    new_ground_truth_dict = {}
+    for img in val_img_filenames:
+      new_ground_truth_dict[img] = ground_truth_dict[img]
+
+    ground_truth_dict = new_ground_truth_dict
 
   # First version solution
   """

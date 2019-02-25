@@ -16,6 +16,7 @@ from threading import Thread
 from tensorflow.contrib import predictor
 
 from shapely.geometry import Polygon
+from tqdm import tqdm
 from utils import util_plotting
 
 matplotlib.use('TKAgg')
@@ -34,7 +35,10 @@ class MaskRCNNPredictor(object):
     self.model_dir = model_dir
     self.image_dir = image_dir
     self.predict_fn = predictor.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
-    self.all_filenames = glob.glob(os.path.join(image_dir, '*.JPG'))
+    if ground_truth_dict is None:
+      self.all_filenames = glob.glob(os.path.join(image_dir, '*.JPG'))
+    else:
+      self.all_filenames = list(ground_truth_dict.keys())
     self.batch_size = batch_size
     self.prefetch_buffer_size = prefetch_buffer_size
     self.ground_truth_dict = ground_truth_dict
@@ -53,7 +57,7 @@ class MaskRCNNPredictor(object):
       bbox = output_dict['detection_boxes'][0]
       mask = output_dict['detection_masks'][0, 0, :, :]
       coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
-                                                       img_height=ORIGINAL_IMAGE_HEIGHT)
+                                                       img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
       output_array[0:8] = coordinates
       output_array = [output_array.tolist()]
     else:
@@ -72,7 +76,8 @@ class MaskRCNNPredictor(object):
     self.pred_dict = {}
 
     # Get an image tensor and print its value.
-    for cur_filename in self.all_filenames:
+    for i in tqdm(range(len(self.all_filenames))):
+      cur_filename = self.all_filenames[i]
       cur_filename = os.path.basename(cur_filename)
 
       # generate prediction
@@ -92,7 +97,8 @@ class MaskRCNNPredictor(object):
         plt.show()
         plt.close()
 
-  def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT):
+  def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT,
+                                    image=None):
     ymin = int(bbox[0] * img_height)
     xmin = int(bbox[1] * img_width)
     ymax = int(bbox[2] * img_height)
@@ -108,7 +114,7 @@ class MaskRCNNPredictor(object):
     _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # generate approximate polygon, this should be rectangle most of the time
-    epsilon = 0.1 * cv2.arcLength(contours[0], True)
+    epsilon = 0.05 * cv2.arcLength(contours[0], True)
     approx = cv2.approxPolyDP(contours[0], epsilon, True)
     if approx.size != 8:
       # if approxPolyDP does not generate a rectangle, fit a simple rectangle
@@ -123,10 +129,10 @@ class MaskRCNNPredictor(object):
     # DO NOT REMOVE, FOR DEBUGGING
     """
     new_mask = np.zeros((img_height, img_width))
-    new_mask[ymin:(ymin+h), xmin:(xmin+w)] = mask
+    new_mask[ymin:(ymin + h), xmin:(xmin + w)] = mask
 
     plt.imshow(image)
-    plt.imshow(new_mask, alpha=0.3)
+    plt.imshow(new_mask, alpha=0.8)
     plt.show()
     plt.close()
     """
