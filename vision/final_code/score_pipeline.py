@@ -16,13 +16,20 @@ def score_pipeline(args):
     ground_truth_filename = 'training/training_GT_labels.json'
     submission_filename = 'submission_all.json'
     image_dir = 'training/images'
+  elif args.data == 'test':
+    ground_truth_filename = None
+    submission_filename = None
+    image_dir = 'testing/images'
   else:
     ground_truth_filename = 'training/training_GT_labels_small.json'
     submission_filename = 'submission_small.json'
     image_dir = 'training/small'
 
-  with open(ground_truth_filename, 'r') as f:
-    ground_truth_dict = json.load(f)
+  if ground_truth_filename:
+    with open(ground_truth_filename, 'r') as f:
+      ground_truth_dict = json.load(f)
+  else:
+    ground_truth_dict = None
 
   if args.data == 'val':
     with open("training/val_images.txt", 'r') as f:
@@ -46,19 +53,21 @@ def score_pipeline(args):
   model_dir = 'weights/maskrcnn-inception-v2'
   predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
   predictor.run_inference(visualize=args.visualize)
-  predictor.output_submission_file(output_filename=submission_filename)
 
-  with open(submission_filename, 'r') as f:
-    submission_dict = json.load(f)
+  if submission_filename:
+    predictor.output_submission_file(output_filename=submission_filename)
 
-  scorer = mAPScorer()
-  coco_score = scorer.COCO_mAP(ground_truth_dict, submission_dict)
+    with open(submission_filename, 'r') as f:
+      submission_dict = json.load(f)
 
-  print('COCO mAP for detector is {}'.format(coco_score))
-  print('Average time is {}'.format(predictor.avg_time))
+    scorer = mAPScorer()
+    coco_score = scorer.COCO_mAP(ground_truth_dict, submission_dict)
 
-  algorithm_score = 35 * (2 * coco_score - predictor.avg_time)
-  print('Estimated algorithm score is {}'.format(algorithm_score))
+    print('COCO mAP for detector is {}'.format(coco_score))
+    print('Average time is {}'.format(predictor.avg_time))
+
+    algorithm_score = 35 * (2 * coco_score - predictor.avg_time)
+    print('Estimated algorithm score is {}'.format(algorithm_score))
 
 
 if __name__ == '__main__':
