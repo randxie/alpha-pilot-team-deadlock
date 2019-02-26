@@ -8,6 +8,7 @@ import flightgoggles.msg as fg_msg
 import mav_msgs.msg as mav_msgs
 import sensor_msgs.msg as s_msgs
 
+from transmitter_node import get_transmitter
 from controller_node import PIDController
 from config import GRAVITY_COEFF
 from queue import Queue
@@ -26,7 +27,7 @@ class FgEnv(gym.Env):
 
     # control frequency
     rospy.init_node('fg_env', anonymous=True)
-    self.rate = rospy.Rate(100)  # 10hz
+    self.rate = rospy.Rate(400)  # 10hz
     self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=10)
     self.height = 0
     self.queue = Queue(maxsize=1)
@@ -84,7 +85,7 @@ class FgEnv(gym.Env):
     self.states[5] = self.states[5] + (self.states[11] + acc_psi_p) / 2.0 * (t - t_p) * (10 ** -9)
 
     self.queue.put((t, acc_x, acc_y, acc_z, self.states[9], self.states[10], self.states[11]))
-    print(self.states[2])
+    #print(self.states[2])
 
   def ir_marker_callback(self, data):
     if len(data.markers):
@@ -93,7 +94,7 @@ class FgEnv(gym.Env):
       else:
         self.target = (data.markers[0].x, data.markers[0].y)
         self.has_target = True
-        print(self.target)
+        #print(self.target)
       self.states[0] = self.target[0] - data.markers[0].x
       self.states[1] = self.target[1] - data.markers[0].y
 
@@ -109,17 +110,29 @@ def listener():
 if __name__ == '__main__':
 
   controller = PIDController()
+  transmitter = get_transmitter()
 
   t1 = threading.Thread(target=listener, daemon=True)
   t1.start()
+  
+  if transmitter is False: # autonomous flight using waypoints
+    print('Started autonomous flight')
+    while True:
+      try:
+        desired_states = [0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0] #env.target[0], env.target[1],
+        action = controller.compute_action(env.states, desired_states)
+        new_state, _, _, _ = env.step(action)
+      except rospy.ROSInterruptException:
+        break
+  else:
+    print('Started manual flight')
+    while True: # manual flights using RC transmitter
+      try:
+        #transmitter.debug()
+        action = transmitter.compute_action() 
+        new_state, _, _, _ = env.step(action)
+        print(action)
+      except KeyboardInterrupt:
 
-  while True:
-    try:
-      desired_states = [0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0] #env.target[0], env.target[1],
-      action = controller.compute_action(env.states, desired_states)
-      new_state, _, _, _ = env.step(action)
-
-    except rospy.ROSInterruptException:
-      break
-
+        break
   t1.join()
