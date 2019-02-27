@@ -19,7 +19,7 @@ from utils import wrap_angle
 GATE_ORDER = [19, 10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6]
 
 
-class GroundTruthEnv(gym.Env):
+class FgVinsEnv(gym.Env):
   # State space representation: [x, y, z, phi, theta, psi, x_dot, y_dot, z_dot, p, q, r]
   #   - where phi, theta and psi are Euler angles
   # Control input (Action space): 4 propellers' speed
@@ -37,6 +37,7 @@ class GroundTruthEnv(gym.Env):
     self.queue.put((0, 0, 0, 0))
     self.reset()
 
+    self.is_vins_ready = False
     self.cur_index = 1
 
   def reset(self):
@@ -55,9 +56,10 @@ class GroundTruthEnv(gym.Env):
     """
     tmp_msg = mav_msgs.RateThrust()
     tmp_msg.thrust.z = action[0]
-    tmp_msg.angular_rates.x = action[1]
-    tmp_msg.angular_rates.y = action[2]
-    tmp_msg.angular_rates.z = action[3]
+    if self.is_vins_ready:
+      tmp_msg.angular_rates.x = action[1]
+      tmp_msg.angular_rates.y = action[2]
+      tmp_msg.angular_rates.z = action[3]
     self.thrust_publisher.publish(tmp_msg)
     self.rate.sleep()
 
@@ -78,7 +80,8 @@ class GroundTruthEnv(gym.Env):
     :param data:
     :return:
     """
-    self.states[2] = -data.range
+    if not self.is_vins_ready:
+      self.states[2] = -data.range
 
   def imu_callback(self, data):
     """Use IMU's angular velocity as true state.
@@ -126,7 +129,6 @@ class GroundTruthEnv(gym.Env):
     """
     for marker in data.markers:
       if int(marker.markerID.data) == self.cur_index:
-        print(marker)
         self.target = (marker.x, marker.y)
 
   def vins_callback(self, data):
@@ -135,6 +137,7 @@ class GroundTruthEnv(gym.Env):
     :param data:
     :return:
     """
+    self.is_vins_ready = True
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(
       [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z,
        data.pose.pose.orientation.w])
@@ -150,15 +153,15 @@ class GroundTruthEnv(gym.Env):
     self.states[2] = data.pose.pose.position.z
 
 
-env = GroundTruthEnv()
+env = FgVinsEnv()
 
 
 def listener():
-  rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, env.ground_truth_callback)
+  #rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, env.ground_truth_callback)
   rospy.Subscriber('/uav/sensors/imu', s_msgs.Imu, env.imu_callback)
   rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, env.ir_marker_callback)
-  # rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, env.range_finder_callback)
-  # rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, env.vins_callback)
+  rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, env.range_finder_callback)
+  rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, env.vins_callback)
   rospy.spin()
 
 
@@ -175,16 +178,21 @@ if __name__ == '__main__':
   while True:
     try:
       dt = (time.time() - t_start)
-      if dt < 15:
-        desired_states = [0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      elif dt < 30:
-        desired_states = [15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      elif dt < 45:
-        desired_states = [15, 0, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
+      if env.is_vins_ready:
+        desired_states = env.states
+        desired_states[0] += 1
       else:
-        desired_states = [15, 5, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
+        if dt < 15:
+          desired_states = [0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        elif dt < 30:
+          desired_states = [15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        elif dt < 45:
+          desired_states = [15, 0, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
+        else:
+          desired_states = [15, 5, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
       action = controller.compute_action(env.states, desired_states)
       new_state, _, _, _ = env.step(action)
+      time.sleep(0.2)
 
     except rospy.ROSInterruptException:
       break
