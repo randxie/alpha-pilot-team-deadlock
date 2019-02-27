@@ -2,7 +2,15 @@ import numpy as np
 from config import GRAVITY_COEFF
 from config import PIDControllerConfig
 
-QUAD_MASS = 1
+
+# quadcopter data from flight goggle's code
+m = 1.00
+Ix = 4.9 * (10 ** (-3))
+Iy = 4.9 * (10 ** (-3))
+Iz = 4.9 * (10 ** (-3))
+d_torque = 2.6 * (10 ** (-7))
+b = 1.91 * (10 ** (-6))
+l = 0.08
 
 
 class AbstractController(object):
@@ -10,6 +18,10 @@ class AbstractController(object):
 
 
 class PIDController(AbstractController):
+  """
+  Ref:
+  [1] Visual-inertial navigation algorithm development using photorealistic camera simulation in the loop
+  """
   def __init__(self):
     self.config = PIDControllerConfig
 
@@ -21,18 +33,45 @@ class PIDController(AbstractController):
     [x_d, y_d, z_d, phi_d, theta_d, psi_d, x_dot_d, y_dot_d, z_dot_d, p_d, q_d, r_d] = list(desired_states)
 
     # firstly do altitude control
-    uz = self.config.kp_z * (z_d - z) + self.config.kp_z_dot * (z_dot_d - z_dot)
-    u1 = (GRAVITY_COEFF + uz) * QUAD_MASS / (np.cos(phi) * np.cos(theta))
+    az = 1
+    az_dot = 5
+    ez = z_d - z
+    ez_dot = z_dot_d - z_dot
+    uz = m / (np.cos(phi) * np.cos(theta)) * (az * ez + GRAVITY_COEFF + az_dot * ez_dot) # - az * (ez_dot + az * ez)
 
     # then we do position control
-    ux = self.config.kp_x * (x_d - x) + self.config.kp_x_dot * (x_dot_d - x_dot)
-    uy = self.config.kp_y * (y_d - y) + self.config.kp_y_dot * (y_dot_d - y_dot)
+    ax = 1
+    ax_dot = 5
+    ex = x_d - x
+    ex_dot = x_dot_d - x_dot
+    ux = (ax * ex + ax_dot * ex_dot)
 
-    theta_d = np.arctan((ux * np.cos(psi) + uy * np.sin(psi)) / (GRAVITY_COEFF + uz))
-    phi_d = np.arctan((ux * np.sin(psi) - uy * np.cos(psi)) / (GRAVITY_COEFF + uz)) * np.cos(theta)
+    ay = 1
+    ay_dot = 5
+    ey = y_d - y
+    ey_dot = y_dot_d - y_dot
+    uy = (ay * ey + ay_dot * ey_dot)
 
-    u2 = self.config.kp_phi * (phi_d - phi) + self.config.kp_phi_dot * (p_d - p)
-    u3 = self.config.kp_theta * (theta_d - theta) + self.config.kp_theta_dot * (q_d - q)
-    u4 = self.config.kp_psi * (psi_d - psi) + self.config.kp_psi_dot * (r_d - r)
+    # orientation controller
+    phi_d = np.arctan2((ux * np.sin(psi) - uy * np.cos(psi)), (GRAVITY_COEFF + uz)) * np.cos(theta)
+    theta_d = np.arctan2((ux * np.cos(psi) + uy * np.sin(psi)), (GRAVITY_COEFF + uz))
 
-    return u1, u2, u3, u4
+    aphi = 3
+    aphi_dot = 1
+    ephi = phi_d - phi
+    ephi_dot = p_d - p
+    uphi = (aphi * ephi + aphi_dot * ephi_dot)
+
+    atheta = 3
+    atheta_dot = 1
+    etheta = theta_d - theta
+    etheta_dot = q_d - q
+    utheta = (atheta * etheta + atheta_dot * etheta_dot)
+
+    apsi = 3
+    apsi_dot = 1
+    epsi = psi_d - psi
+    epsi_dot = r_d - r
+    upsi = (apsi * epsi + apsi_dot * epsi_dot)
+
+    return uz, uphi, utheta, upsi
