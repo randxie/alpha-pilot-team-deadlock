@@ -9,8 +9,13 @@ import scipy
 import tensorflow as tf
 import time
 
-from object_detection.utils import ops as utils_ops
-from object_detection.utils import visualization_utils as vis_util
+try:
+  from object_detection.utils import ops as utils_ops
+  from object_detection.utils import visualization_utils as vis_util
+  objd_imp = True
+except:
+  objd_imp = False
+
 from queue import Queue
 from threading import Thread
 from tensorflow.contrib import predictor
@@ -111,8 +116,10 @@ class MaskRCNNPredictor(object):
 
     # convert mask to threshold and find contour
     ret, thresh = cv2.threshold(mask, 0.5, 1, 0)
-    _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+    # OpenCV 3.x
+    #_, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # OpenCV 4.x
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # generate approximate polygon, this should be rectangle most of the time
     epsilon = 0.05 * cv2.arcLength(contours[0], True)
     approx = cv2.approxPolyDP(contours[0], epsilon, True)
@@ -173,7 +180,7 @@ class MaskRCNNPredictor(object):
     :param title: Filename
     :return: None
     """
-    if self.batch_size == 1:
+    if self.batch_size == 1 and objd_imp:
       # currently only handle cases when batch size is equal to 1
       vis_util.visualize_boxes_and_labels_on_image_array(
         image_array,
