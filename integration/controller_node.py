@@ -1,7 +1,4 @@
 import numpy as np
-from config import GRAVITY_COEFF
-from config import PIDControllerConfig
-
 
 # quadcopter data from flight goggle's code
 m = 1.00
@@ -11,6 +8,7 @@ Iz = 4.9 * (10 ** (-3))
 d_torque = 2.6 * (10 ** (-7))
 b = 1.91 * (10 ** (-6))
 l = 0.08
+GRAVITY_COEFF = 9.8
 
 
 class AbstractController(object):
@@ -22,8 +20,9 @@ class PIDController(AbstractController):
   Ref:
   [1] Visual-inertial navigation algorithm development using photorealistic camera simulation in the loop
   """
+
   def __init__(self):
-    self.config = PIDControllerConfig
+    pass
 
   def compute_action(self, cur_states, desired_states):
     # State representation: [x, y, z, phi, theta, psi, x_dot, y_dot, z_dot, p, q, r]
@@ -37,7 +36,7 @@ class PIDController(AbstractController):
     az_dot = 5
     ez = z_d - z
     ez_dot = z_dot_d - z_dot
-    uz = m / (np.cos(phi) * np.cos(theta)) * (az * ez + GRAVITY_COEFF + az_dot * ez_dot) # - az * (ez_dot + az * ez)
+    uz = m / (np.cos(phi) * np.cos(theta)) * (az * ez + GRAVITY_COEFF + az_dot * ez_dot)  # - az * (ez_dot + az * ez)
 
     # then we do position control
     ax = 1

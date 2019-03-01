@@ -16,6 +16,8 @@ from controller_node import PIDController
 from queue import Queue
 from utils import wrap_angle
 
+GATE_ORDER = [19, 10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6]
+
 
 class GroundTruthEnv(gym.Env):
   # State space representation: [x, y, z, phi, theta, psi, x_dot, y_dot, z_dot, p, q, r]
@@ -34,6 +36,8 @@ class GroundTruthEnv(gym.Env):
     self.queue = Queue(maxsize=1)
     self.queue.put((0, 0, 0, 0))
     self.reset()
+
+    self.cur_index = 1
 
   def reset(self):
     """Reset environment
@@ -120,12 +124,10 @@ class GroundTruthEnv(gym.Env):
     :param data:
     :return:
     """
-    if len(data.markers):
-      if self.has_target:
-        pass
-      else:
-        self.target = (data.markers[0].x, data.markers[0].y)
-        self.has_target = True
+    for marker in data.markers:
+      if int(marker.markerID.data) == self.cur_index:
+        print(marker)
+        self.target = (marker.x, marker.y)
 
   def vins_callback(self, data):
     """Not Used. For testing VINS Mono.
@@ -154,9 +156,9 @@ env = GroundTruthEnv()
 def listener():
   rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, env.ground_truth_callback)
   rospy.Subscriber('/uav/sensors/imu', s_msgs.Imu, env.imu_callback)
-  #rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, env.ir_marker_callback)
-  #rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, env.range_finder_callback)
-  #rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, env.vins_callback)
+  rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, env.ir_marker_callback)
+  # rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, env.range_finder_callback)
+  # rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, env.vins_callback)
   rospy.spin()
 
 
@@ -176,7 +178,7 @@ if __name__ == '__main__':
       if dt < 15:
         desired_states = [0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       elif dt < 30:
-        desired_states = [15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+        desired_states = [15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       elif dt < 45:
         desired_states = [15, 0, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
       else:
