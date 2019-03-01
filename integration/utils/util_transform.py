@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def get_rotation_mtx(euler_angles):
   """Rotational matrix from Euler angles [phi, theta, psi]
 

@@ -11,11 +11,7 @@ l = 0.08
 GRAVITY_COEFF = 9.8
 
 
-class AbstractController(object):
-  pass
-
-
-class PIDController(AbstractController):
+class PIDController(object):
   """
   Ref:
   [1] Visual-inertial navigation algorithm development using photorealistic camera simulation in the loop
