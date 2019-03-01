@@ -9,8 +9,13 @@ import scipy
 import tensorflow as tf
 import time
 
-from object_detection.utils import ops as utils_ops
-from object_detection.utils import visualization_utils as vis_util
+try:
+  from object_detection.utils import ops as utils_ops
+  from object_detection.utils import visualization_utils as vis_util
+  objd_imp = True
+except:
+  objd_imp = False
+
 from queue import Queue
 from threading import Thread
 from tensorflow.contrib import predictor
@@ -175,7 +180,7 @@ class MaskRCNNPredictor(object):
     :param title: Filename
     :return: None
     """
-    if self.batch_size == 1:
+    if self.batch_size == 1 and objd_imp:
       # currently only handle cases when batch size is equal to 1
       vis_util.visualize_boxes_and_labels_on_image_array(
         image_array,
