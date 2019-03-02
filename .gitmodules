@@ -4,3 +4,6 @@
 [submodule "simulation/flight_goggle/FlightGogglesClientBindings"]
 	path = simulation/flight_goggle/FlightGogglesClientBindings
 	url = https://github.com/AgileDrones/FlightGogglesClientBindings.git
+[submodule "trajectory/grad_traj_optimization"]
+	path = trajectory/grad_traj_optimization
+	url = https://github.com/HKUST-Aerial-Robotics/grad_traj_optimization.git
