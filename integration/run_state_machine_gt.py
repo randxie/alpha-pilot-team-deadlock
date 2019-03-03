@@ -14,7 +14,8 @@ class SystemState(Enum):
   HOVERING = 1
   EXPLORING = 2
   GATE_TRACKING = 3
-  STOP = 4
+  GATE_PASSING = 4
+  STOP = 5
 
 
 class StateMachine(object):
@@ -38,7 +39,11 @@ class StateMachine(object):
     if self._sys_state == SystemState.START:
       self.try_state_transition(SystemState.HOVERING)
     elif self._sys_state == SystemState.HOVERING:
+      self.try_state_transition(SystemState.EXPLORING)
+    elif self._sys_state == SystemState.EXPLORING:
       self.try_state_transition(SystemState.GATE_TRACKING)
+    elif self._sys_state == SystemState.GATE_TRACKING:
+      self.try_state_transition(SystemState.GATE_PASSING)
 
   def try_state_transition(self, target_sys_state):
     if target_sys_state == SystemState.HOVERING:
@@ -47,7 +52,19 @@ class StateMachine(object):
         return
       else:
         desired_states = np.array([0, 0, self.hovering_height, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    elif target_sys_state == SystemState.GATE_TRACKING:
+    elif target_sys_state == SystemState.EXPLORING:
+      # explorer only activates after passing the gate or at hovering state.
+      gate_found = True  # should interact with gate detector / env
+      if self._sys_state == SystemState.HOVERING:
+        if gate_found:
+          self._sys_state = SystemState.GATE_TRACKING
+        else:
+          # should get desired_state from explorer
+          pass
+      elif self._sys_state == SystemState.GATE_PASSING:
+        pass
+    elif target_sys_state == SystemState.GATE_PASSING:
+      # if it is close enough to gate, transit to gate passing, otherwise stay
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=None)
 
     actions = self._controller.compute_action(self._env.states, desired_states)
