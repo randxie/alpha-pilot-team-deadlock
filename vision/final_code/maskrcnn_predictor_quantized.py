@@ -21,7 +21,7 @@ from tensorflow.contrib import predictor
 
 from shapely.geometry import Polygon
 from tqdm import tqdm
-import util_plotting
+from utils import util_plotting
 
 matplotlib.use('TKAgg')
 
@@ -49,9 +49,9 @@ class MaskRCNNPredictor(object):
     self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
     
   def quantize_model(self, model_dir):
-    converter = tf.lite.TFLiteConverter.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
+    converter = tf.contrib.lite.TFLiteConverter.from_saved_model(model_dir) #, config=tf.ConfigProto(log_device_placement=True))
     converter.post_training_quantize = True
-    tflite_model=converter.convert()
+    tflite_model = converter.convert()
     return tflite_model
 
   def predict(self, image_array):

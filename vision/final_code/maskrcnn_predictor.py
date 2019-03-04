@@ -75,7 +75,7 @@ class MaskRCNNPredictor(object):
 
     return output_array, coordinates
 
-  def run_inference(self, visualize=False):
+  def run_inference(self, visualize=False, save_img=False):
     # for getting time and predictions
     self.time_all = []
     self.pred_dict = {}
@@ -99,7 +99,10 @@ class MaskRCNNPredictor(object):
             util_plotting.plot_GT_pred(image_array[0], [coordinates], self.ground_truth_dict[cur_filename])
         else:
           util_plotting.plot_bbox(original_image, [coordinates])
-        plt.show()
+        if save_img:
+          plt.savefig('tmp/%s' % cur_filename)
+        else:
+          plt.show()
         plt.close()
 
   def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT,
@@ -117,7 +120,7 @@ class MaskRCNNPredictor(object):
     # convert mask to threshold and find contour
     ret, thresh = cv2.threshold(mask, 0.5, 1, 0)
     # OpenCV 3.x
-    #_, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # OpenCV 4.x
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # generate approximate polygon, this should be rectangle most of the time
@@ -138,8 +141,8 @@ class MaskRCNNPredictor(object):
     new_mask = np.zeros((img_height, img_width))
     new_mask[ymin:(ymin + h), xmin:(xmin + w)] = mask
 
-    plt.imshow(image)
-    plt.imshow(new_mask, alpha=0.8)
+    plt.imshow(image[ymin:(ymin + h), xmin:(xmin + w), :])
+    plt.imshow(mask, alpha=0.4)
     plt.show()
     plt.close()
     """
