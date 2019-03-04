@@ -10,7 +10,7 @@ ORIGINAL_IMAGE_WIDTH = 1296
 ORIGINAL_IMAGE_HEIGHT = 864
 SCALE_FACTOR = 1.6
 
-ground_truth_filename = 'training/training_GT_labels_v2.json'
+ground_truth_filename = 'training/training_GT_labels_updated.json'
 image_dir = 'training/images'
 visualize = False
 
@@ -66,5 +66,5 @@ for img_key, bbox in ground_truth_dict.items():
   else:
     print(img_key)
 
-with open('training/training_gt_bbox.json', 'w') as outfile:
+with open('training/training_gt_bbox_updated.json', 'w') as outfile:
   json.dump(output_dict, outfile)
