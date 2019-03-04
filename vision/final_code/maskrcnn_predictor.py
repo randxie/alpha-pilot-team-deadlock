@@ -36,7 +36,7 @@ ORIGINAL_IMAGE_HEIGHT = 864
 class MaskRCNNPredictor(object):
 
   def __init__(self, model_dir, image_dir, batch_size=1, prefetch_buffer_size=4, ground_truth_dict=None,
-               flyable_region_detector=None):
+               flyable_region_detector='mask'):
     self.model_dir = model_dir
     self.image_dir = image_dir
     self.predict_fn = predictor.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
@@ -73,12 +73,14 @@ class MaskRCNNPredictor(object):
     toc = time.monotonic()
     self.time_all.append(toc - tic)
 
-    return output_array, coordinates
+    return output_array, coordinates, output_dict
 
   def run_inference(self, visualize=False):
     # for getting time and predictions
+    # return output_dict for error analysis
     self.time_all = []
     self.pred_dict = {}
+    self.output_dict = {}
 
     # Get an image tensor and print its value.
     for i in tqdm(range(len(self.all_filenames))):
@@ -89,8 +91,9 @@ class MaskRCNNPredictor(object):
       original_image = cv2.imread(os.path.join(self.image_dir, cur_filename))
       original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
       image_array = [original_image]
-      output_array, coordinates = self.predict(image_array)
+      output_array, coordinates, output_dict = self.predict(image_array)
       self.pred_dict[cur_filename] = output_array
+      self.output_dict[cur_filename] = output_dict
 
       # visualize original images as well as bounding box
       if visualize:
