@@ -1,5 +1,9 @@
 from shapely.geometry import Polygon
 import numpy as np
+from utils import util_plotting
+from pathlib import Path
+import cv2
+import matplotlib.pyplot as plt
 
 class mAPScorer():
 
@@ -46,7 +50,7 @@ class mAPScorer():
         return mAP, mAP_points
 
     def COCO_mAP(self, GT_data, pred_data):
-        IOU_all = np.linspace(0.05, 0.95, 10)
+        IOU_all = np.linspace(0.5, 0.95, 10) # LM originally had 0.05...
         sumAP = 0
         for iou_threshold in IOU_all:
             sumAP += self.IOU_mAP(GT_data, pred_data, iou_threshold)
@@ -145,3 +149,29 @@ class mAPScorer():
             map_ += prcn
             map_all.append(prcn)
         return map_ / 11., map_all
+
+    def check_iou(self, img_dir, GT_data, pred_data, output_dict, threshold, save_fail_dir):
+
+        for img_key in list(GT_data.keys()):
+
+            GT_box = GT_data[img_key]
+
+            if img_key in pred_data.keys():
+                pred_box = pred_data[img_key]
+            else:
+                pred_box = [[]]
+
+            if (len(pred_box) > 0):
+                truth_poly = self.create_poly(np.array(GT_box[0]))
+                pred_poly = self.create_poly(np.array(pred_box[0][0:8]))
+                iou_box = self.calculate_iou(truth_poly, pred_poly)
+
+                if iou_box < threshold:
+                    img = cv2.imread(img_dir + '\\' + img_key)
+                    mask = output_dict[img_key]['detection_masks'][0, 0, :, :]
+                    util_plotting.plot_GT_pred(img, pred_box, GT_box, mask=mask)
+                    iou_str = "%.3f" % iou_box
+                    plt.savefig(save_fail_dir + '\\' + ((img_key.lower()).replace('.jpg', '')).upper() +
+                                '_IOU_' + iou_str + '.png')
+                    plt.close()
+

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 
 
 def plot_bbox(img, bbox, color='c'):
@@ -21,8 +22,12 @@ def plot_bbox(img, bbox, color='c'):
   plt.axis('off')
 
 
-def plot_GT_pred(img, bbox, bbox_gt, color='c', color_gt='g'):
+def plot_GT_pred(img, bbox, bbox_gt, mask = [], color='c', color_gt='g'):
   plt.imshow(img)
+
+  img_height = np.size(img, 0)
+  img_width = np.size(img, 1)
+
   for i_ in range(len(bbox)):
     bb_i = bbox[i_]
     #lbl_i = lbl[i_]
@@ -53,4 +58,19 @@ def plot_GT_pred(img, bbox, bbox_gt, color='c', color_gt='g'):
              [y1, y2, y3, y4, y1],
              color=color_gt, linewidth=2
              )
+
+  if len(mask) > 1:
+    ymin = int(np.array(bbox[0])[[1,3,5,7]].min())
+    xmin = int(np.array(bbox[0])[[0,2,4,6]].min())
+    ymax = int(np.array(bbox[0])[[1,3,5,7]].max())
+    xmax = int(np.array(bbox[0])[[0,2,4,6]].max())
+    w = int(xmax - xmin)
+    h = int(ymax - ymin)
+
+    mask = scipy.misc.imresize(mask, (h, w), interp='bilinear')
+    new_mask = np.zeros((img_height, img_width))
+    new_mask[ymin:(ymin + h), xmin:(xmin + w)] = mask
+
+    plt.imshow(new_mask, alpha=0.5)
+
   plt.axis('off')

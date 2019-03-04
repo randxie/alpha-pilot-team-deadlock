@@ -1,17 +1,29 @@
 import argparse
 import json
 from numpy import loadtxt
-from maskrcnn_predictor import MaskRCNNPredictor
 from predictor import Predictor
 from scorer.scorer import mAPScorer
 from sift_flyable_region_detector import SiftFlyableRegionDetector
 
+from pathlib import Path
+FUNC_DIR = str(Path(__file__))
+DEFAULT_SAVEFAILDIR = str(Path(FUNC_DIR).resolve().parents[0]) + '\\failed_images'
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", default='small', type=str, help="full or small")
 parser.add_argument("--visualize", action='store_true', default=False, help="whether to visualize output")
-
+parser.add_argument("--quantized", action='store_true', default=False, help="quantized version or not")
+parser.add_argument("--flyable_region_detector", default='mask', type=str, help="get flyable region by mask or not")
+parser.add_argument("--iou_threshold", default=.80, type=float, help="threshold by which image passes or fails")
+parser.add_argument("--save_fail_dir", default=DEFAULT_SAVEFAILDIR, type=str, help="directory to save failed images")
 
 def score_pipeline(args):
+  if args.quantized:
+    from maskrcnn_predictor_quantized import MaskRCNNPredictor
+  else:
+    from maskrcnn_predictor import MaskRCNNPredictor
+
   if args.data == 'full' or args.data == 'val':
     ground_truth_filename = 'training/training_GT_labels.json'
     submission_filename = 'submission_all.json'
@@ -49,9 +61,11 @@ def score_pipeline(args):
                         flyable_region_detector=flyable_region_detector)
   """
 
-  # mask rcnn solution
+  # mask rcnn solution (or hough from predicted bbox)
   model_dir = 'weights/maskrcnn-inception-v2'
-  predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
+  predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1,
+                                ground_truth_dict=ground_truth_dict,
+                                flyable_region_detector=args.flyable_region_detector)
   predictor.run_inference(visualize=args.visualize)
 
   if submission_filename:
@@ -68,6 +82,9 @@ def score_pipeline(args):
 
     algorithm_score = 35 * (2 * coco_score - predictor.avg_time)
     print('Estimated algorithm score is {}'.format(algorithm_score))
+
+    scorer.check_iou(image_dir, ground_truth_dict, submission_dict, predictor.output_dict,
+                     args.iou_threshold, args.save_fail_dir)
 
 
 if __name__ == '__main__':
