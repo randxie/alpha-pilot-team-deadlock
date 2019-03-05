@@ -78,6 +78,11 @@ class MaskRCNNPredictor(object):
 
         flyable_region_detector = flyable_region_detector_hough(img=image_array[0], bbox=bbox_hough)
         coordinates = flyable_region_detector.detect(visualize=self.visualize_hough)
+
+        #In case of failure, use mask
+        if len(coordinates) == 0:
+          coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+                                                           img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
       else:
         coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
                                                          img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
@@ -110,7 +115,7 @@ class MaskRCNNPredictor(object):
       image_array = [original_image]
       output_array, coordinates = self.predict(image_array)
       self.pred_dict[cur_filename] = output_array
-
+      print("%s: %.6f s" % (cur_filename, self.time_all[-1]))
       # visualize original images as well as bounding box
       if visualize:
         if self.ground_truth_dict:

@@ -2,10 +2,11 @@ import numpy as np
 import cv2
 import os
 import json
-#import scipy.cluster.hierarchy as hcluster
+# import scipy.cluster.hierarchy as hcluster
 from matplotlib import pyplot as plt
 
 cv2.setUseOptimized(True)
+
 
 class flyable_region_detector_hough(object):
 
@@ -16,11 +17,11 @@ class flyable_region_detector_hough(object):
   def closest_pt(self, pt, pt_list):
     pt = np.array(pt)
     pt_list = np.asarray(pt_list)
-    dist_2 = np.sum((pt_list - pt)**2, axis=1)
+    dist_2 = np.sum((pt_list - pt) ** 2, axis=1)
     return pt_list[np.argmin(dist_2), :]
 
-  def detect(self, cannySigma = 0.33,
-             gausKernelSize = (3,3), gausSigmaX = 0, gausSigmaY = 0, gausBorderType = 0,
+  def detect(self, cannySigma=0.33,
+             gausKernelSize=(3, 3), gausSigmaX=0, gausSigmaY=0, gausBorderType=0,
              visualize=False):
     # bbox = [x1, y1, x2, y2, x3, y3, x4, y4]
     bbox = self.bbox
@@ -38,12 +39,12 @@ class flyable_region_detector_hough(object):
     h = y_max - y_min
     w = x_max - x_min
 
-    x_cen = (x_max + x_min)/2
-    y_cen = (y_max + y_min)/2
+    x_cen = (x_max + x_min) / 2
+    y_cen = (y_max + y_min) / 2
 
     bbox_img = self.img[y_min:y_max, x_min:x_max]
     bbox_img_gray = cv2.cvtColor(cv2.cvtColor(bbox_img, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
-    bbox_img_gray_inv = ~bbox_img_gray #invert image
+    bbox_img_gray_inv = ~bbox_img_gray  # invert image
 
     # Should homomorphic filtering be applied?
     if visualize == True:
@@ -53,8 +54,8 @@ class flyable_region_detector_hough(object):
     upper = int(max(0, (1.0 - cannySigma) * v))
     lower = int(min(255, (1.0 + cannySigma) * v))
 
-    minLength = min(h*0.5, w*0.5)
-    maxGap = 5 # Make this an adaptable parameter?
+    minLength = min(h * 0.5, w * 0.5)
+    maxGap = 5  # Make this an adaptable parameter?
 
     minCanny = min(h, w)
     maxCanny = minCanny * 1.5
@@ -72,19 +73,19 @@ class flyable_region_detector_hough(object):
       plt.imshow(img_gaus), plt.show()
 
     # Dilate
-    img_dil = cv2.dilate(img_gaus, cv2.getStructuringElement(cv2.MORPH_RECT, (5,5)))
+    img_dil = cv2.dilate(img_gaus, cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)))
     if visualize == True:
       plt.imshow(img_dil), plt.show()
 
     # Hough transform
-    lines = cv2.HoughLinesP(img_dil, 1, np.pi/180, 180, minLineLength=minLength, maxLineGap=maxGap)
+    lines = cv2.HoughLinesP(img_dil, 1, np.pi / 180, 180, minLineLength=minLength, maxLineGap=maxGap)
     if visualize == True:
       bbox_img_gray_tmp = bbox_img_gray.copy()
       for line in lines:
         coords = line[0]
-        cv2.circle(bbox_img_gray_tmp, (coords[0],coords[1]), 5, (255,0,0),-1)
-        cv2.circle(bbox_img_gray_tmp, (coords[2],coords[3]), 5, (255,0,0),-1)
-        cv2.line(bbox_img_gray_tmp, (coords[0],coords[1]), (coords[2],coords[3]), [255,255,0], 2)
+        cv2.circle(bbox_img_gray_tmp, (coords[0], coords[1]), 5, (255, 0, 0), -1)
+        cv2.circle(bbox_img_gray_tmp, (coords[2], coords[3]), 5, (255, 0, 0), -1)
+        cv2.line(bbox_img_gray_tmp, (coords[0], coords[1]), (coords[2], coords[3]), [255, 255, 0], 2)
       plt.imshow(bbox_img_gray_tmp), plt.show()
 
     # Segment the lines for intersection
@@ -94,9 +95,9 @@ class flyable_region_detector_hough(object):
     for line in lines:
       x1, y1, x2, y2 = line[0]
       # Call all angles < 45 horizontal, else vertical
-      lin_ang = np.abs(np.arctan2((y2-y1), (x2-x1)))
+      lin_ang = np.abs(np.arctan2((y2 - y1), (x2 - x1)))
 
-      if lin_ang <= np.pi/4:
+      if lin_ang <= np.pi / 4:
         h_lines.append(line)
       else:
         v_lines.append(line)
@@ -110,8 +111,10 @@ class flyable_region_detector_hough(object):
         x3, y3, x4, y4 = v_line[0]
 
         # compute determinant
-        Px = np.float32(((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4))/((x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)))
-        Py = np.float32(((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4))/((x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)))
+        Px = np.float32(((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / (
+              (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)))
+        Py = np.float32(((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / (
+              (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)))
 
         pt_list.append((Px, Py))
 
@@ -125,51 +128,80 @@ class flyable_region_detector_hough(object):
 
     # kmeans clustering?
 
+    # clusters = hcluster.fclusterdata(pt_list_array,20, criterion="distance")
 
-    #clusters = hcluster.fclusterdata(pt_list_array,20, criterion="distance")
+    # Find best corners based on quadrants and center. Broken up because sometimes this detection will fail.
 
-    # Find best corners based on quadrants and center (
+    try:
+      quad1 = pt_list[(pt_list[:, 0] >= w / 2) * (pt_list[:, 1] >= h / 2), :]
+      pt_1 = self.closest_pt((h / 2, w / 2), quad1)
+      ptg_1 = pt_1 + np.array([x_min, y_min])
+    except:
+      pt_1 = []
+      ptg_1 = []
 
-    quad1 = pt_list[(pt_list[:, 0] >= w / 2) * (pt_list[:, 1] >= h / 2), :]
-    quad2 = pt_list[(pt_list[:, 0] >= w / 2) * (pt_list[:, 1] < h / 2), :]
-    quad3 = pt_list[(pt_list[:, 0] < w / 2) * (pt_list[:, 1] < h / 2), :]
-    quad4 = pt_list[(pt_list[:, 0] < w / 2) * (pt_list[:, 1] >= h / 2), :]
+    try:
+      quad2 = pt_list[(pt_list[:, 0] >= w / 2) * (pt_list[:, 1] < h / 2), :]
+      pt_2 = self.closest_pt((h / 2, w / 2), quad2)
+      ptg_2 = pt_2 + np.array([x_min, y_min])
+    except:
+      pt_2 = []
+      ptg_2 = []
 
-    pt_1 = self.closest_pt((h/2, w/2), quad1)
-    pt_2 = self.closest_pt((h/2, w/2), quad2)
-    pt_3 = self.closest_pt((h/2, w/2), quad3)
-    pt_4 = self.closest_pt((h/2, w/2), quad4)
+    try:
+      quad3 = pt_list[(pt_list[:, 0] < w / 2) * (pt_list[:, 1] < h / 2), :]
+      pt_3 = self.closest_pt((h / 2, w / 2), quad3)
+      ptg_3 = pt_3 + np.array([x_min, y_min])
+    except:
+      pt_3 = []
+      ptg_3 = []
+
+    try:
+      quad4 = pt_list[(pt_list[:, 0] < w / 2) * (pt_list[:, 1] >= h / 2), :]
+      pt_4 = self.closest_pt((h / 2, w / 2), quad4)
+      ptg_4 = pt_4 + np.array([x_min, y_min])
+    except:
+      pt_4 = []
+      ptg_4 = []
 
     coords_local = np.array([pt_1, pt_2, pt_3, pt_4])
+    coords_global = np.array([ptg_1, ptg_2, ptg_3, ptg_4])
 
-    coords = coords_local + np.array([x_min, y_min])
-    coords = coords.flatten()
+    if len(coords_local.flatten()) == 8:
 
-    # ConvexHull
-    #hull = cv2.convexHull(lines,returnPoints = True)
+      # ConvexHull
+      # hull = cv2.convexHull(lines,returnPoints = True)
 
-    # Reverse affine transformation?
+      # Reverse affine transformation?
 
-    # Transform back to original image
+      # Transform back to original image
 
-    # Visualize
-    if visualize == True:
-      bbox_img_gray_tmp = bbox_img_gray.copy()
-      #            for line in lines:
-      #                coords = line[0]
-      #                cv2.line(bbox_img_gray, (coords[0],coords[1]), (coords[2],coords[3]), [255,255,0], 3)
-      for pt in coords_local:
-        cv2.circle(bbox_img_gray_tmp, (pt[0], pt[1]), 5, (0,255,0),-1)
+      # Visualize
+      if visualize == True:
+        bbox_img_gray_tmp = bbox_img_gray.copy()
+        #            for line in lines:
+        #                coords = line[0]
+        #                cv2.line(bbox_img_gray, (coords[0],coords[1]), (coords[2],coords[3]), [255,255,0], 3)
+        for pt in coords_local:
+          cv2.circle(bbox_img_gray_tmp, (pt[0], pt[1]), 5, (0, 255, 0), -1)
 
-      plt.imshow(bbox_img_gray_tmp), plt.show()
+        plt.imshow(bbox_img_gray_tmp), plt.show()
+      coords = coords_global.flatten()
+    else:
+      coords = []
+
     return coords
+
 
 if __name__ == '__main__':
   from pathlib import Path
+
   FUNC_DIR = str(Path(__file__))
   DATA_DIR = str(Path(FUNC_DIR).resolve().parents[0]) + '\\training\\images'
   LABELFILE = str(Path(FUNC_DIR).resolve().parents[0]) + "\\training\\training_gt_bbox_updated.json"
 
+  # Motion blur: IMG_0045.JPG
+  # Occlusion: IMG_0053.JPG
   img_name = 'IMG_0045.JPG'
   img = cv2.imread((DATA_DIR + '\\' + img_name), cv2.IMREAD_COLOR)
   with open(LABELFILE) as labelFile:
@@ -182,5 +214,5 @@ if __name__ == '__main__':
   x4,y4 = bboxtemp["x_max"], bboxtemp["y_min"]
   bbox = [x1, y1, x2, y2, x3, y3, x4, y4]
   """
-  region_obj = flyable_region_detector_hough(bbox=bbox_dict[img_name],img=img)
+  region_obj = flyable_region_detector_hough(bbox=bbox_dict[img_name], img=img)
   region_obj.detect(visualize=True)
