@@ -9,7 +9,8 @@ from sift_flyable_region_detector import SiftFlyableRegionDetector
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", default='small', type=str, help="full or small")
 parser.add_argument("--visualize", action='store_true', default=False, help="whether to visualize output")
-
+parser.add_argument("--visualize_hough", action='store_true', default=False, help="whether to visualize hough output")
+parser.add_argument("--flyable_region_detector", default='mask', type=str, help="mask or hough")
 
 def score_pipeline(args):
   if args.data == 'full' or args.data == 'val':
@@ -51,7 +52,9 @@ def score_pipeline(args):
 
   # mask rcnn solution
   model_dir = 'weights/maskrcnn-inception-v2'
-  predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
+  predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict,
+                                flyable_region_detector=args.flyable_region_detector,
+                                visualize_hough=args.visualize_hough)
   predictor.run_inference(visualize=args.visualize)
 
   if submission_filename:
