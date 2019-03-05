@@ -10,7 +10,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 LABEL_DIR = os.path.join(PROJECT_DIR, 'label')
 TEMPLATE_DIR = os.path.join(PROJECT_DIR, 'template')
 DATA_DIR = os.path.join(PROJECT_DIR, 'data')
-LABEL_FILENAME = 'training_gt_bbox.json' # was 'sift_auto_generated_label.json'
+LABEL_FILENAME = 'training_gt_bbox_updated.json' # was 'sift_auto_generated_label.json'
 
 class AlphaPilotAutoGenLabel(object):
   """Convert annotations to COCO Json format."""
