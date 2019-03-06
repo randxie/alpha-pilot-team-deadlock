@@ -9,7 +9,6 @@ parser.add_argument("--visualize", action='store_true', default=False, help="whe
 
 
 def score_pipeline(args):
-  model_dir = 'weights/maskrcnn-inception-v2'
   submission_filename = 'submission_final.json'
   image_dir = 'testing/images'
 
@@ -19,7 +18,7 @@ def score_pipeline(args):
   # predictor = Predictor(model_dir, image_dir, batch_size=1, flyable_region_detector=flyable_region_detector)
 
   # mask rcnn version
-  model_dir = 'weights/maskrcnn-inception-v2'
+  model_dir = 'weights/maskrcnn-inception-v2-larger-mask-100x100'
   predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1)
   predictor.run_inference(visualize=args.visualize)
   predictor.output_submission_file(output_filename=submission_filename)

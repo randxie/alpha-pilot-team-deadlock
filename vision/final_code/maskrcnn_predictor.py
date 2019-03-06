@@ -20,6 +20,7 @@ from queue import Queue
 from threading import Thread
 from tensorflow.contrib import predictor
 
+from scorer.scorer import mAPScorer
 from shapely.geometry import Polygon
 from tqdm import tqdm
 from utils import util_plotting
@@ -32,6 +33,8 @@ CATEGORY_INDEX = {1: {'name': 'gate'}}
 ORIGINAL_IMAGE_WIDTH = 1296
 ORIGINAL_IMAGE_HEIGHT = 864
 
+cv2.setUseOptimized(True)
+scorer = mAPScorer()
 
 class MaskRCNNPredictor(object):
 
@@ -58,7 +61,7 @@ class MaskRCNNPredictor(object):
     output_array = np.zeros(9)
     output_array[-1] = output_dict['detection_scores'][0]
 
-    if output_array[-1] > 0.3:
+    if output_array[-1] > 0.2:
       bbox = output_dict['detection_boxes'][0]
       mask = output_dict['detection_masks'][0, 0, :, :]
       coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
@@ -75,7 +78,7 @@ class MaskRCNNPredictor(object):
 
     return output_array, coordinates
 
-  def run_inference(self, visualize=False, save_img=False):
+  def run_inference(self, visualize=False, save_img=True):
     # for getting time and predictions
     self.time_all = []
     self.pred_dict = {}
@@ -93,17 +96,31 @@ class MaskRCNNPredictor(object):
       self.pred_dict[cur_filename] = output_array
 
       # visualize original images as well as bounding box
-      if visualize:
+      if len(coordinates):
         if self.ground_truth_dict:
-          if cur_filename in self.ground_truth_dict:
-            util_plotting.plot_GT_pred(image_array[0], [coordinates], self.ground_truth_dict[cur_filename])
-        else:
-          util_plotting.plot_bbox(original_image, [coordinates])
-        if save_img:
-          plt.savefig('tmp/%s' % cur_filename)
-        else:
-          plt.show()
-        plt.close()
+          poly1 = scorer.create_poly(coordinates)
+          poly2 = scorer.create_poly(self.ground_truth_dict[cur_filename][0])
+          tmp_score = scorer.calculate_iou(poly1, poly2)
+          if tmp_score < 0.85:
+            print('less than 0.85: %s --- %f', cur_filename, tmp_score)
+
+      if len(coordinates):
+        if visualize:
+          if self.ground_truth_dict:
+            if cur_filename in self.ground_truth_dict:
+              try:
+                util_plotting.plot_GT_pred(image_array[0], [coordinates], self.ground_truth_dict[cur_filename])
+              except Exception as e:
+                print('failed to plot', cur_filename)
+          else:
+            util_plotting.plot_bbox(original_image, [coordinates])
+          if save_img:
+            plt.savefig('tmp/%s' % cur_filename)
+          else:
+            plt.show()
+          plt.close()
+      else:
+        print('miscatch: %s' % cur_filename)
 
   def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT,
                                     image=None):
@@ -115,26 +132,53 @@ class MaskRCNNPredictor(object):
     h = int(ymax - ymin)
 
     # resize mask back to the bbox size and use bbox coordinate as reference
-    mask = scipy.misc.imresize(mask, (h, w), interp='bilinear')
+    mask = scipy.misc.imresize((mask > 0.3).astype(np.uint8), (h, w), interp='nearest')
 
     # convert mask to threshold and find contour
     ret, thresh = cv2.threshold(mask, 0.5, 1, 0)
+
     # OpenCV 3.x
     # _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # OpenCV 4.x
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     # generate approximate polygon, this should be rectangle most of the time
     epsilon = 0.05 * cv2.arcLength(contours[0], True)
     approx = cv2.approxPolyDP(contours[0], epsilon, True)
+
     if approx.size != 8:
       # if approxPolyDP does not generate a rectangle, fit a simple rectangle
+      print(approx)
       rect = cv2.minAreaRect(contours[0])
       approx = cv2.boxPoints(rect)
       approx[:, 0] = approx[:, 0] + xmin
       approx[:, 1] = approx[:, 1] + ymin
+
+      #plt.imshow(image[ymin:(ymin + h), xmin:(xmin + w), :])
+      #plt.imshow(mask, alpha=0.4)
+      #plt.show()
+      #plt.close()
     else:
       approx[:, 0, 0] = approx[:, 0, 0] + xmin
       approx[:, 0, 1] = approx[:, 0, 1] + ymin
+
+      new_mask = np.zeros((img_height, img_width))
+      new_mask[ymin:(ymin + h), xmin:(xmin + w)] = mask
+
+
+
+    """
+    image = image[ymin:(ymin + h), xmin:(xmin + w), :]
+    sure_fg = (mask > 0.9).astype(np.uint8)
+    ret, markers = cv2.connectedComponents(sure_fg)
+    #markers = (1 + (mask > 0.5)).astype(np.int32)
+    markers = cv2.watershed(image, markers)
+    image[markers == -1] = [255, 0, 0]
+    plt.imshow(image)
+    plt.imshow(mask, alpha=0.4)
+    plt.show()
+    plt.close()
+    """
 
     # DO NOT REMOVE, FOR DEBUGGING
     """

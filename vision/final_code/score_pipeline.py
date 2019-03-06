@@ -13,7 +13,7 @@ parser.add_argument("--visualize", action='store_true', default=False, help="whe
 
 def score_pipeline(args):
   if args.data == 'full' or args.data == 'val':
-    ground_truth_filename = 'training/training_GT_labels.json'
+    ground_truth_filename = 'training/training_GT_labels_updated.json'
     submission_filename = 'submission_all.json'
     image_dir = 'training/images'
   elif args.data == 'test':
@@ -37,7 +37,8 @@ def score_pipeline(args):
 
     new_ground_truth_dict = {}
     for img in val_img_filenames:
-      new_ground_truth_dict[img] = ground_truth_dict[img]
+      if img in ground_truth_dict:
+        new_ground_truth_dict[img] = ground_truth_dict[img]
 
     ground_truth_dict = new_ground_truth_dict
 
@@ -50,7 +51,7 @@ def score_pipeline(args):
   """
 
   # mask rcnn solution
-  model_dir = 'weights/maskrcnn-inception-v2'
+  model_dir = 'weights/maskrcnn-inception-v2-larger-mask-100x100' # 'weights/maskrcnn-inception-v2'
   predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
   predictor.run_inference(visualize=args.visualize)
 
