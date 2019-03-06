@@ -102,7 +102,7 @@ class MaskRCNNPredictor(object):
 
     return output_array, coordinates
 
-  def run_inference(self, visualize=False, save_img=True):
+  def run_inference(self, visualize=False, save_img=False):
     # for getting time and predictions
     self.time_all = []
     self.pred_dict = {}
@@ -118,7 +118,7 @@ class MaskRCNNPredictor(object):
       image_array = [original_image]
       output_array, coordinates = self.predict(image_array)
       self.pred_dict[cur_filename] = output_array
-      print("%s: %.6f s" % (cur_filename, self.time_all[-1]))
+
       # visualize original images as well as bounding box
       if len(coordinates):
         if self.ground_truth_dict:
@@ -156,7 +156,7 @@ class MaskRCNNPredictor(object):
     h = int(ymax - ymin)
 
     # resize mask back to the bbox size and use bbox coordinate as reference
-    mask = scipy.misc.imresize((mask > 0.3).astype(np.uint8), (h, w), interp='nearest')
+    mask = scipy.misc.imresize((mask > 0.2).astype(np.uint8), (h, w), interp='nearest')
 
     # convert mask to threshold and find contour
     ret, thresh = cv2.threshold(mask, 0.5, 1, 0)
@@ -168,7 +168,8 @@ class MaskRCNNPredictor(object):
 
     # generate approximate polygon, this should be rectangle most of the time
     epsilon = 0.05 * cv2.arcLength(contours[0], True)
-    approx = cv2.approxPolyDP(contours[0], epsilon, True)
+    hull = cv2.convexHull(contours[0])
+    approx = cv2.approxPolyDP(hull, epsilon, True)
 
     if approx.size != 8:
       # if approxPolyDP does not generate a rectangle, fit a simple rectangle
