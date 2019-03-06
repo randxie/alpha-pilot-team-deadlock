@@ -80,7 +80,7 @@ vel0 = [0, 0, 0] #velocity
 acc0 = [0, 0, 0] #acceleration
 
 # Define the goal state:
-posf = gate[0]  # position
+posf = gate[GATE_ORDER[0]]  # position
 velf = [0, 0, 0]  # velocity
 accf = [0, 9.81, 0]  # acceleration
 
@@ -135,20 +135,20 @@ for i in range(len(GATE_ORDER)):
     acc0 = acceleration[-1]
     traj.reset();
 
-# Test input feasibility
-inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)
+    # Test input feasibility
+    inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)
 
-# Test whether we fly into the floor
-floorPoint  = [0,0,0]  # a point on the floor
-floorNormal = [0,0,1]  # we want to be in this direction of the point (upwards)
-positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal)
+    # Test whether we fly into the floor
+    floorPoint  = [0,0,0]  # a point on the floor
+    floorNormal = [0,0,1]  # we want to be in this direction of the point (upwards)
+    positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal)
 
-for i in range(3):
-    print("Axis #" , i)
-    print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i))
-print("Total cost = " , traj.get_cost())
-print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")")
-print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")")
+    for i in range(3):
+        print("Axis #" , i)
+        print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i))
+    print("Total cost = " , traj.get_cost())
+    print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")")
+    print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")")
 
 ###########################################
 # Plot the trajectories, and their inputs #
