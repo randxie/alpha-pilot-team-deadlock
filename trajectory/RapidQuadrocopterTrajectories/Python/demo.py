@@ -5,12 +5,12 @@ SYNOPSIS
     A simple demo for Rapid trajectory generation for quadrocopters
 
 DESCRIPTION
-    
+
     Generates a single trajectory, and runs input and position feasibility
     tests. Then some plots are generated to visualise the results.
 
 AUTHOR
-    
+
     Mark W. Mueller <mwm@mwm.im>
 
 LICENSE
@@ -29,8 +29,8 @@ LICENSE
 
     You should have received a copy of the GNU General Public License
     along with the code.  If not, see <http://www.gnu.org/licenses/>.
-    
-VERSION 
+
+VERSION
 
     0.0
 
@@ -68,10 +68,11 @@ Gate21 = np.mean(gate_locations['Gate21']['location'], axis = 0);
 Gate22 = np.mean(gate_locations['Gate22']['location'], axis = 0);
 Gate23 = np.mean(gate_locations['Gate23']['location'], axis = 0);
 
-gate = [Gate1, Gate2, Gate3, Gate4, Gate5, Gate6, Gate7, Gate8, Gate9, Gate10, 
+gate = [Gate1, Gate2, Gate3, Gate4, Gate5, Gate6, Gate7, Gate8, Gate9, Gate10,
         Gate11, Gate12, Gate13, Gate14, Gate15, Gate16, Gate17, Gate18, Gate19,
-        Gate20, Gate21, Gate22, Gate23]
+        Gate20, Gate21, Gate22, Gate23];
 
+GATE_ORDER = [19, 10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6];
 
 # Define the trajectory starting state:
 pos0 = [-1, -30, 1] #position
@@ -101,24 +102,24 @@ velocity = list();
 acceleration = list();
 thrust = list();
 ratesMagn = list();
-for i in range(len(gate)):
+for i in range(len(GATE_ORDER)):
     traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity)
-    traj.set_goal_position(gate[i])
+    traj.set_goal_position(gate[GATE_ORDER[i]-1])
     traj.set_goal_velocity(velf)
     traj.set_goal_acceleration(accf)
     traj.generate(Tf)
-    # Note: if you'd like to leave some states free, there are two options to 
+    # Note: if you'd like to leave some states free, there are two options to
     # encode this. As exmample, we will be leaving the velocity in `x` (axis 0)
     # free:
     #
-    # Option 1: 
+    # Option 1:
     # traj.set_goal_velocity_in_axis(1,velf_y);
     # traj.set_goal_velocity_in_axis(2,velf_z);
-    # 
+    #
     # Option 2:
     # traj.set_goal_velocity([None, velf_y, velf_z])
-     
-    # Run the algorithm, and generate the trajectory.        
+
+    # Run the algorithm, and generate the trajectory.
     numPlotPoints = 100
     time = np.linspace(0, Tf, numPlotPoints);
     for j in range(numPlotPoints):
@@ -141,7 +142,7 @@ inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)
 floorPoint  = [0,0,0]  # a point on the floor
 floorNormal = [0,0,1]  # we want to be in this direction of the point (upwards)
 positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal)
- 
+
 for i in range(3):
     print("Axis #" , i)
     print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i))
@@ -157,7 +158,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 
-time = np.linspace(0, Tf*len(gate), numPlotPoints*len(gate));
+time = np.linspace(0, Tf*len(GATE_ORDER), numPlotPoints*len(GATE_ORDER));
 figStates, axes = plt.subplots(3,1,sharex=True)
 gs = gridspec.GridSpec(6, 2)
 axPos = plt.subplot(gs[0:2, 0])
@@ -181,17 +182,17 @@ infeasibleAreaColour = [1,0.5,0.5]
 axThrust = plt.subplot(gs[0:3, 1])
 axOmega  = plt.subplot(gs[3:6, 1])
 axThrust.plot(time,thrust,'k', label='command')
-axThrust.plot([0,Tf*len(gate)],[fmin,fmin],'r--', label='fmin')
-axThrust.fill_between([0,Tf*len(gate)],[fmin,fmin],-1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
-axThrust.fill_between([0,Tf*len(gate)],[fmax,fmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
-axThrust.plot([0,Tf*len(gate)],[fmax,fmax],'r-.', label='fmax')
+axThrust.plot([0,Tf*len(GATE_ORDER)],[fmin,fmin],'r--', label='fmin')
+axThrust.fill_between([0,Tf*len(GATE_ORDER)],[fmin,fmin],-1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+axThrust.fill_between([0,Tf*len(GATE_ORDER)],[fmax,fmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+axThrust.plot([0,Tf*len(GATE_ORDER)],[fmax,fmax],'r-.', label='fmax')
 
 axThrust.set_ylabel('Thrust [m/s^2]')
 axThrust.legend()
 
 axOmega.plot(time, ratesMagn,'k',label='command magnitude')
-axOmega.plot([0,Tf*len(gate)],[wmax,wmax],'r--', label='wmax')
-axOmega.fill_between([0,Tf*len(gate)],[wmax,wmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+axOmega.plot([0,Tf*len(GATE_ORDER)],[wmax,wmax],'r--', label='wmax')
+axOmega.fill_between([0,Tf*len(GATE_ORDER)],[wmax,wmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
 axOmega.set_xlabel('Time [s]')
 axOmega.set_ylabel('Body rates [rad/s]')
 axOmega.legend()
