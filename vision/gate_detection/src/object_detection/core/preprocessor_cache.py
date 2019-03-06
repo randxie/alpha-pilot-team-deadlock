@@ -32,8 +32,6 @@ class PreprocessorCache(object):
   # Constant keys representing different preprocessing functions
   ROTATION90 = 'rotation90'
   HORIZONTAL_FLIP = 'horizontal_flip'
-  MOTION_BLUR = 'motion_blur'
-  ROTATE_ALONG_Y = 'rotate_along_y'
   VERTICAL_FLIP = 'vertical_flip'
   PIXEL_VALUE_SCALE = 'pixel_value_scale'
   IMAGE_SCALE = 'image_scale'
@@ -57,7 +55,7 @@ class PreprocessorCache(object):
   SSD_CROP_PAD_SELECTOR_ID = 'ssd_crop_pad_selector_id'
 
   # 23 permitted function ids
-  _VALID_FNS = [ROTATION90, HORIZONTAL_FLIP, MOTION_BLUR, ROTATE_ALONG_Y, VERTICAL_FLIP, PIXEL_VALUE_SCALE,
+  _VALID_FNS = [ROTATION90, HORIZONTAL_FLIP, VERTICAL_FLIP, PIXEL_VALUE_SCALE,
                 IMAGE_SCALE, RGB_TO_GRAY, ADJUST_BRIGHTNESS, ADJUST_CONTRAST,
                 ADJUST_HUE, ADJUST_SATURATION, DISTORT_COLOR, STRICT_CROP_IMAGE,
                 CROP_IMAGE, PAD_IMAGE, CROP_TO_ASPECT_RATIO, RESIZE_METHOD,

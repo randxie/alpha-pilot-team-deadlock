@@ -147,16 +147,6 @@ def build(preprocessor_step_config):
                     config.keypoint_flip_permutation),
             })
 
-  if step_type == 'random_rotate_along_y_axis':
-    config = preprocessor_step_config.random_rotate_along_y_axis
-    return (preprocessor.random_rotate_along_y_axis,
-            {})
-
-  if step_type == 'random_motion_blur':
-    config = preprocessor_step_config.random_motion_blur
-    return (preprocessor.random_motion_blur,
-            {})
-
   if step_type == 'random_vertical_flip':
     config = preprocessor_step_config.random_vertical_flip
     return (preprocessor.random_vertical_flip,

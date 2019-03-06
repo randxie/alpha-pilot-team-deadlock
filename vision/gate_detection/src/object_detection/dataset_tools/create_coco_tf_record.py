@@ -31,7 +31,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import cv2
 import hashlib
 import io
 import json
@@ -47,8 +46,6 @@ from object_detection.dataset_tools import tf_record_creation_util
 from object_detection.utils import dataset_util
 from object_detection.utils import label_map_util
 
-from object_detection.core.preprocessor import random_motion_blur
-from object_detection.core.preprocessor import random_rotate_along_y_axis
 
 flags = tf.app.flags
 tf.flags.DEFINE_boolean('include_masks', False,
@@ -77,8 +74,7 @@ def create_tf_example(image,
                       annotations_list,
                       image_dir,
                       category_index,
-                      include_masks=False,
-                      augmentation_idx=0):
+                      include_masks=False):
   """Converts image and annotations to a tf.Example proto.
 
   Args:
@@ -114,47 +110,10 @@ def create_tf_example(image,
   image_id = image['id']
 
   full_path = os.path.join(image_dir, filename)
-  if not tf.gfile.Exists(full_path):
-    tf.logging.warn('Image file: %s not exist. skipped', full_path)
-    return None, None, None
-
   with tf.gfile.GFile(full_path, 'rb') as fid:
     encoded_jpg = fid.read()
   encoded_jpg_io = io.BytesIO(encoded_jpg)
   image = PIL.Image.open(encoded_jpg_io)
-
-  if augmentation_idx == 1:
-    kernel_size = 15
-    kernel_motion_blur = np.zeros((kernel_size, kernel_size))
-    kernel_motion_blur[int((kernel_size - 1) / 2), :] = np.ones(kernel_size)
-    kernel_motion_blur = kernel_motion_blur / kernel_size
-
-    # applying the kernel to the input image
-    image = cv2.filter2D(np.array(image), -1, kernel_motion_blur)
-
-    pil_image = PIL.Image.fromarray(image)
-    output_io = io.BytesIO()
-    pil_image.save(output_io, format='PNG')
-    encoded_jpg = output_io.getvalue()
-
-  if augmentation_idx == 2:
-    theta = 0.75
-
-    image = np.array(image)
-    h, w, _ = image.shape
-
-    t_fn = lambda x: (x - w / 2.0) * np.cos(theta) + w / 2.0
-
-    src_points = np.float32([[0, 0], [h - 1, 0], [0, w - 1], [h - 1, w - 1]])
-    dst_points = np.float32([[t_fn(0), 0], [t_fn(h - 1.0), 0], [t_fn(0), w - 1], [t_fn(h - 1.0), w - 1]])
-    projective_matrix = cv2.getPerspectiveTransform(src_points, dst_points)
-    image = cv2.warpPerspective(image, projective_matrix, (w, h))
-
-    pil_image = PIL.Image.fromarray(image)
-    output_io = io.BytesIO()
-    pil_image.save(output_io, format='PNG')
-    encoded_jpg = output_io.getvalue()
-
   key = hashlib.sha256(encoded_jpg).hexdigest()
 
   xmin = []
@@ -175,40 +134,18 @@ def create_tf_example(image,
     if x + width > image_width or y + height > image_height:
       num_annotations_skipped += 1
       continue
-
-    # TODO: remove hard code category class.
-    category_id = int(object_annotations['category_id'])
-    if category_id != 1:
-      continue
-
-    img_xmin = float(x) / image_width
-    img_xmax = float(x + width) / image_width
-    img_ymin = float(y) / image_height
-    img_ymax = float(y + height) / image_height
-
-    if augmentation_idx == 2:
-      theta = 0.6
-      img_xmin = (img_xmin - 0.5) * np.cos(theta) + 0.5
-      img_xmax = (img_xmax - 0.5) * np.cos(theta) + 0.5
-      img_ymin = img_ymin
-      img_ymax = img_ymax
-
-    img_xmin = max(img_xmin, 0)
-    img_xmax = min(img_xmax, 1)
-    img_ymin = max(img_ymin, 0)
-    img_ymax = min(img_ymax, 1)
-
-    xmin.append(img_xmin)
-    xmax.append(img_xmax)
-    ymin.append(img_ymin)
-    ymax.append(img_ymax)
+    xmin.append(float(x) / image_width)
+    xmax.append(float(x + width) / image_width)
+    ymin.append(float(y) / image_height)
+    ymax.append(float(y + height) / image_height)
     is_crowd.append(object_annotations['iscrowd'])
+    category_id = int(object_annotations['category_id'])
     category_ids.append(category_id)
-    category_names.append(category_index[category_id-1]['name'].encode('utf8'))
+    category_names.append(category_index[category_id]['name'].encode('utf8'))
     area.append(object_annotations['area'])
 
     if include_masks:
-      run_len_encoding = mask.frPyObjects([object_annotations['segmentation']],
+      run_len_encoding = mask.frPyObjects(object_annotations['segmentation'],
                                           image_height, image_width)
       binary_mask = mask.decode(run_len_encoding)
       if not object_annotations['iscrowd']:
@@ -217,7 +154,6 @@ def create_tf_example(image,
       output_io = io.BytesIO()
       pil_image.save(output_io, format='PNG')
       encoded_mask_png.append(output_io.getvalue())
-
   feature_dict = {
       'image/height':
           dataset_util.int64_feature(image_height),
@@ -256,7 +192,7 @@ def create_tf_example(image,
 
 
 def _create_tf_record_from_coco_annotations(
-    annotations_file, image_dir, output_path, include_masks, num_shards, add_rotation=False, add_blur=False):
+    annotations_file, image_dir, output_path, include_masks, num_shards):
   """Loads COCO annotation json files and converts to tf.Record format.
 
   Args:
@@ -301,30 +237,9 @@ def _create_tf_record_from_coco_annotations(
       annotations_list = annotations_index[image['id']]
       _, tf_example, num_annotations_skipped = create_tf_example(
           image, annotations_list, image_dir, category_index, include_masks)
-      if tf_example:
-        total_num_annotations_skipped += num_annotations_skipped
-        shard_idx = idx % num_shards
-        output_tfrecords[shard_idx].write(tf_example.SerializeToString())
-
-      # add augmentations
-      # add motion blur
-      if add_blur:
-        _, tf_example, num_annotations_skipped = create_tf_example(
-            image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=1)
-        if tf_example:
-          total_num_annotations_skipped += num_annotations_skipped
-          shard_idx = idx % num_shards
-          output_tfrecords[shard_idx].write(tf_example.SerializeToString())
-
-      # add rotation
-      if add_rotation:
-        _, tf_example, num_annotations_skipped = create_tf_example(
-            image, annotations_list, image_dir, category_index, include_masks, augmentation_idx=2)
-        if tf_example:
-          total_num_annotations_skipped += num_annotations_skipped
-          shard_idx = idx % num_shards
-          output_tfrecords[shard_idx].write(tf_example.SerializeToString())
-
+      total_num_annotations_skipped += num_annotations_skipped
+      shard_idx = idx % num_shards
+      output_tfrecords[shard_idx].write(tf_example.SerializeToString())
     tf.logging.info('Finished writing, skipped %d annotations.',
                     total_num_annotations_skipped)
 
