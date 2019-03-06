@@ -1,9 +1,9 @@
 %YAML:1.0
 
 #common parameters
-imu_topic: "sensors/imu"
+imu_topic: "/uav/sensors/imu"
 image_topic: "/uav/camera/left/image_rect_color"
-output_path: "~/Desktop/"
+output_path: "~/Desktop"
 
 #camera calibration 
 model_type: PINHOLE
@@ -11,10 +11,10 @@ camera_name: camera
 image_width: 1024
 image_height: 768
 distortion_parameters:
-   k1: -2.917e-01
-   k2: 8.228e-02
-   p1: 5.333e-05
-   p2: -1.578e-04
+   k1: 0
+   k2: 0
+   p1: 0
+   p2: 0
 projection_parameters:
    fx: 5.48e+02
    fy: 5.48e+02
@@ -31,15 +31,15 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [0.0148655429818, -0.999880929698, 0.00414029679422,
-           0.999557249008, 0.0149672133247, 0.025715529948, 
-           -0.0257744366974, 0.00375618835797, 0.999660727178]
+   data: [ 0.0000000,  0.0000000,  1.0000000,
+         -1.0000000,  0.0000000,  0.0000000,
+         0.0000000, -1.0000000,  0.0000000]
 #Translation from camera frame to imu frame, imu^T_cam
 extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.0216401454975,-0.064676986768, 0.00981073058949]
+   data: [0.0,0.0, 0.0]
 
 #feature traker paprameters
 max_cnt: 150            # max feature number in feature tracking
@@ -66,10 +66,10 @@ g_norm: 9.81007     # gravity magnitude
 loop_closure: 1                    # start loop closure
 load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
 fast_relocalization: 0             # useful in real-time and large project
-pose_graph_save_path: "~/Desktop/" # save and load path
+pose_graph_save_path: "~/Desktop" # save and load path
 
 #unsynchronization parameters
-estimate_td: 0                      # online estimate time offset between camera and imu
+estimate_td: 1                      # online estimate time offset between camera and imu
 td: 0.0                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
 
 #rolling shutter parameters

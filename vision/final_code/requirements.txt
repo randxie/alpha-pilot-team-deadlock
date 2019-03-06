@@ -2,7 +2,7 @@
 # Nvidia CUDA 10.0
 
 tensorflow-gpu==1.13.1
-matplotlib==1.5.1
+matplotlib==3.0.3
 numpy==1.16.2
 scipy==1.2.1
 pillow==5.4.1
@@ -10,5 +10,5 @@ tqdm==4.31.1
 opencv-python==4.0.0.21
 shapely==1.6.4.post1
 
-# need research\object_detection from https://github.com/tensorflow/models.git
+# (only for debugging) need research\object_detection from https://github.com/tensorflow/models.git
 #-e git:https://github.com/tensorflow/models.git

@@ -8,6 +8,7 @@ import os
 import scipy
 import tensorflow as tf
 import time
+from detect_flyable_region import flyable_region_detector_hough
 
 try:
   from object_detection.utils import ops as utils_ops
@@ -39,7 +40,7 @@ scorer = mAPScorer()
 class MaskRCNNPredictor(object):
 
   def __init__(self, model_dir, image_dir, batch_size=1, prefetch_buffer_size=4, ground_truth_dict=None,
-               flyable_region_detector=None):
+               flyable_region_detector='mask', visualize_hough=False):
     self.model_dir = model_dir
     self.image_dir = image_dir
     self.predict_fn = predictor.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
@@ -51,6 +52,8 @@ class MaskRCNNPredictor(object):
     self.prefetch_buffer_size = prefetch_buffer_size
     self.ground_truth_dict = ground_truth_dict
     self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
+    self.flyable_region_detector = flyable_region_detector
+    self.visualize_hough = visualize_hough
 
   def predict(self, image_array):
     tic = time.monotonic()
@@ -64,8 +67,29 @@ class MaskRCNNPredictor(object):
     if output_array[-1] > 0.2:
       bbox = output_dict['detection_boxes'][0]
       mask = output_dict['detection_masks'][0, 0, :, :]
-      coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+
+      if self.flyable_region_detector == 'mask':
+        coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
                                                        img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
+      elif self.flyable_region_detector == 'hough':
+        image_array_shape = np.shape(image_array[0])
+        ymin = int(bbox[0] * image_array_shape[0])
+        xmin = int(bbox[1] * image_array_shape[1])
+        ymax = int(bbox[2] * image_array_shape[0])
+        xmax = int(bbox[3] * image_array_shape[1])
+        bbox_hough = {"y_min": ymin, "x_min": xmin, "y_max": ymax, "x_max": xmax}
+
+        flyable_region_detector = flyable_region_detector_hough(img=image_array[0], bbox=bbox_hough)
+        coordinates = flyable_region_detector.detect(visualize=self.visualize_hough)
+
+        #In case of failure, use mask
+        if len(coordinates) == 0:
+          coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+                                                           img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
+      else:
+        coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+                                                         img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
+
       output_array[0:8] = coordinates
       output_array = [output_array.tolist()]
     else:
@@ -94,7 +118,7 @@ class MaskRCNNPredictor(object):
       image_array = [original_image]
       output_array, coordinates = self.predict(image_array)
       self.pred_dict[cur_filename] = output_array
-
+      print("%s: %.6f s" % (cur_filename, self.time_all[-1]))
       # visualize original images as well as bounding box
       if len(coordinates):
         if self.ground_truth_dict:

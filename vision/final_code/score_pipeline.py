@@ -9,7 +9,8 @@ from sift_flyable_region_detector import SiftFlyableRegionDetector
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", default='small', type=str, help="full or small")
 parser.add_argument("--visualize", action='store_true', default=False, help="whether to visualize output")
-
+parser.add_argument("--visualize_hough", action='store_true', default=False, help="whether to visualize hough output")
+parser.add_argument("--flyable_region_detector", default='mask', type=str, help="mask or hough")
 
 def score_pipeline(args):
   if args.data == 'full' or args.data == 'val':
