@@ -1,41 +1,3 @@
-"""
-
-SYNOPSIS
-
-    A simple demo for Rapid trajectory generation for quadrocopters
-
-DESCRIPTION
-
-    Generates a single trajectory, and runs input and position feasibility
-    tests. Then some plots are generated to visualise the results.
-
-AUTHOR
-
-    Mark W. Mueller <mwm@mwm.im>
-
-LICENSE
-
-    Copyright 2014 by Mark W. Mueller <mwm@mwm.im>
-
-    This code is free software: you can redistribute
-    it and/or modify it under the terms of the GNU General Public
-    License as published by the Free Software Foundation, either
-    version 3 of the License, or (at your option) any later version.
-
-    This code is distributed in the hope that it will
-    be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
-    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with the code.  If not, see <http://www.gnu.org/licenses/>.
-
-VERSION
-
-    0.0
-
-"""
-
 from __future__ import print_function, division
 import quadrocoptertrajectory as quadtraj
 import numpy as np
@@ -105,7 +67,7 @@ ratesMagn = list();
 for i in range(len(GATE_ORDER)):
     traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity)
     traj.set_goal_position(gate[GATE_ORDER[i]-1])
-    traj.set_goal_velocity(velf)
+    traj.set_goal_velocity([None, None, None])
     traj.set_goal_acceleration(accf)
     traj.generate(Tf)
     # Note: if you'd like to leave some states free, there are two options to
@@ -129,11 +91,6 @@ for i in range(len(GATE_ORDER)):
         acceleration.append(traj.get_acceleration(t))
         thrust.append(traj.get_thrust(t))
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)))
-    # Reset using last point
-    pos0 = position[-1]
-    vel0 = velocity[-1]
-    acc0 = acceleration[-1]
-    traj.reset();
 
     # Test input feasibility
     inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)
@@ -149,6 +106,12 @@ for i in range(len(GATE_ORDER)):
     print("Total cost = " , traj.get_cost())
     print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")")
     print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")")
+
+    # Reset using last point
+    pos0 = position[-1]
+    vel0 = velocity[-1]
+    acc0 = acceleration[-1]
+    traj.reset();
 
 ###########################################
 # Plot the trajectories, and their inputs #
