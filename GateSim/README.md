@@ -16,8 +16,10 @@ Probably doesn't require Unity to be installed.
 * Press `K` ensuring flyable region is visible to you. A screenshot will be saved in required dimensions same as given training data in 'GateSim/SimulatedData_Data/screenshots'. Corresponding co-ordinates will be stored in 'results.txt'
 
 # Postprocess
-* Adding a simple python script to load images and manipulate the generated results
-* See more in `ppsim.py`
+* Added a simple python script to load images and manipulate the generated results and create a json out of it
+* See more in `ppsim.py` 
+* Bounding box order = LowerLeft, LowerRight, UpperRight, UpperLeft
+* There are different 
 
 # Caveats
 * The pixels are approximate and not 100% accurate. There is about 5-10% error.
