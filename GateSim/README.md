@@ -14,6 +14,7 @@ Probably doesn't require Unity to be installed.
 * Press `I` or `P` to change background (currently either of the 2 DRL logos)
 * Press `U` to change the lights of the spotlights projected on our gate.
 * Press `K` ensuring flyable region is visible to you. A screenshot will be saved in required dimensions same as given training data in 'GateSim/SimulatedData_Data/screenshots'. Corresponding co-ordinates will be stored in 'results.txt'
+* For burst mode (like video) please press `V`. Everything else is same as above bullet.
 
 # Postprocess
 * Added a simple python script to load images and manipulate the generated results and create a json out of it
