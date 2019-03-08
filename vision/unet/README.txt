@@ -9,6 +9,9 @@ To train:
 
 TF model code is based on:
 https://github.com/jakeret/tf_unet
+Modifications made for Team Deadlock use:
+- Changing from valid to same padding so that output mask will have same width and height as the original image
+- Able to accept .jpg as a mask.
 
 Documentation:
 https://tf-unet.readthedocs.io/en/latest/tf_unet.html
