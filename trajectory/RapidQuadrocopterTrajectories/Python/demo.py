@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import quadrocoptertrajectory as quadtraj
 import numpy as np
+import yaml
 # import rospy
 
 
@@ -15,14 +16,46 @@ def main():
     # rospy.spin();
     #
     # Predefined gates
+    with open('gate_locations_0.yaml') as handle:
+        gate_locations = yaml.safe_load(handle);
+
+    Gate1 = np.mean(gate_locations['Gate1']['location'], axis = 0);
+    Gate2 = np.mean(gate_locations['Gate2']['location'], axis = 0);
+    Gate3 = np.mean(gate_locations['Gate3']['location'], axis = 0);
+    Gate4 = np.mean(gate_locations['Gate4']['location'], axis = 0);
+    Gate5 = np.mean(gate_locations['Gate5']['location'], axis = 0);
+    Gate6 = np.mean(gate_locations['Gate6']['location'], axis = 0);
+    Gate7 = np.mean(gate_locations['Gate7']['location'], axis = 0);
+    Gate8 = np.mean(gate_locations['Gate8']['location'], axis = 0);
+    Gate9 = np.mean(gate_locations['Gate9']['location'], axis = 0);
+    Gate10 = np.mean(gate_locations['Gate10']['location'], axis = 0);
+    Gate11 = np.mean(gate_locations['Gate11']['location'], axis = 0);
+    Gate12 = np.mean(gate_locations['Gate12']['location'], axis = 0);
+    Gate13 = np.mean(gate_locations['Gate13']['location'], axis = 0);
+    Gate14 = np.mean(gate_locations['Gate14']['location'], axis = 0);
+    Gate15 = np.mean(gate_locations['Gate15']['location'], axis = 0);
+    Gate16 = np.mean(gate_locations['Gate16']['location'], axis = 0);
+    Gate17 = np.mean(gate_locations['Gate17']['location'], axis = 0);
+    Gate18 = np.mean(gate_locations['Gate18']['location'], axis = 0);
+    Gate19 = np.mean(gate_locations['Gate19']['location'], axis = 0);
+    Gate20 = np.mean(gate_locations['Gate20']['location'], axis = 0);
+    Gate21 = np.mean(gate_locations['Gate21']['location'], axis = 0);
+    Gate22 = np.mean(gate_locations['Gate22']['location'], axis = 0);
+    Gate23 = np.mean(gate_locations['Gate23']['location'], axis = 0);
+
+    gate = [Gate1, Gate2, Gate3, Gate4, Gate5, Gate6, Gate7, Gate8, Gate9, Gate10,
+            Gate11, Gate12, Gate13, Gate14, Gate15, Gate16, Gate17, Gate18, Gate19,
+            Gate20, Gate21, Gate22, Gate23];
+
+    GATE_ORDER = [19, 10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6];
 
     # Define the trajectory starting state:
-    pos0 = [0, 0, 0] #position
+    pos0 = [-1, -30, 1] #position
     vel0 = [0, 0, 0] #velocity
     acc0 = [0, 0, 0] #acceleration
 
     # Define the goal state:
-    posf = [1, 2, 3]  # position
+    posf = gate[GATE_ORDER[0]]  # position
     velf = [5, 5, 0]  # velocity
     accf = [0, 0, 0]  # acceleration
 
