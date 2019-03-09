@@ -14,8 +14,6 @@ def main():
     # rospy.Subscriber('DESIRED_WAYPOINTS', ,callback);
     # rospy.spin();
 
-
-
     # Define the trajectory starting state:
     pos0 = [0, 0, 0] # position
     vel0 = [0, 0, 0] # velocity
@@ -27,9 +25,9 @@ def main():
     accf = [0, 0, 0]  # acceleration
 
     # Define the duration:
-    tmin = 0; # minimum time
+    tmin = 1; # minimum time, has to be > 0
     tmax = 10; # maximum time
-    Tf = np.linspace(tmin, tmax, 100);
+    Tf = np.linspace(tmin, tmax, 1000);
 
     # Define the input limits:
     fmin = 5  #[m/s**2]
@@ -48,61 +46,57 @@ def main():
     acceleration = list();
     thrust = list();
     ratesMagn = list();
-    trajCost = list();
-    N = 100;
+    N = 1000;
 
     # Grid search optimization
-    for i in range(len(Tf)):
+    for i in range(len(Tf)-1):
         traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity);
         traj.set_goal_position(posf);
         traj.set_goal_velocity(velf);
         traj.set_goal_acceleration(accf);
         traj.generate(Tf[i]);
         cost = traj.get_cost();
-        if (traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)):
-            trajCost.append(traj.get_cost());
-        else:
-            trajCost.append(float("inf"));
+        if (traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec) == 0):
+            print(Tf[i]);
+            break;
 
-    # Find index of minimum cost
-    minPos = trajCost.index(min(trajCost));
-    print(minPos);
-    # Find corresponding time
-    timeToGo = Tf[minPos];
-    # Obtain the trajectory with the lowest cost
-    # time = np.linspace(0, timeToGo, N);
-    # traj.generate(timeToGo);
-    # for j in range(N):
-    #     t = time[j];
-    #     position.append(traj.get_position(t));
-    #     velocity.append(traj.get_velocity(t));
-    #     acceleration.append(traj.get_acceleration(t));
-    #     thrust.append(traj.get_thrust(t));
-    #     ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
-    #
-    # ###############
-    # # Feasibility #
-    # ###############
-    #
-    # # Test input feasibility
-    # inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
-    #
-    # # Test whether we fly into the floor
-    # floorPoint  = [0,0,0];  # a point on the floor
-    # floorNormal = [0,0,1];  # we want to be in this direction of the point (upwards)
-    # positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal);
-    #
-    # for i in range(3):
-    #     print("Axis #" , i);
-    #     print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i));
-    # print("Total cost = " , traj.get_cost());
-    # print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")");
-    # print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")");
-    #
-    # # Reset
-    # traj.reset();
-    #
-    # plot(Tf, GATE_ORDER, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax);
+    # Find minimum feasible time
+    timeToGo = Tf[i];
+    # Obtain the trajectory with the lowest time
+    time = np.linspace(0, timeToGo, N);
+    traj.generate(timeToGo);
+    print(traj.get_cost());
+    for j in range(N):
+        t = time[j];
+        position.append(traj.get_position(t));
+        velocity.append(traj.get_velocity(t));
+        acceleration.append(traj.get_acceleration(t));
+        thrust.append(traj.get_thrust(t));
+        ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
+    
+    ###############
+    # Feasibility #
+    ###############
+    
+    # Test input feasibility
+    inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
+
+    # Test whether we fly into the floor or any planes
+    floorPoint  = [0,0,0];  # a point on the floor
+    floorNormal = [0,0,1];  # we want to be in this direction of the point (upwards)
+    positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal);
+
+    for i in range(3):
+        print("Axis #" , i);
+        print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i));
+    print("Total cost = " , traj.get_cost());
+    print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")");
+    print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")");
+
+    # Reset
+    traj.reset();
+
+    plot(timeToGo, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax);
 
     # # Publish waypoints
     # pub = rospy.Publisher('trajectory', array, queue_size = 10)
@@ -120,8 +114,8 @@ def main():
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-def plot(Tf, GATE_ORDER, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax):
-    time = np.linspace(0, Tf*len(GATE_ORDER), N*len(GATE_ORDER));
+def plot(Tf, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax):
+    time = np.linspace(0, Tf, N);
     figStates, axes = plt.subplots(3,1,sharex=True)
     gs = gridspec.GridSpec(6, 2)
     axPos = plt.subplot(gs[0:2, 0])
@@ -145,17 +139,17 @@ def plot(Tf, GATE_ORDER, N, position, velocity, acceleration, thrust, ratesMagn,
     axThrust = plt.subplot(gs[0:3, 1])
     axOmega  = plt.subplot(gs[3:6, 1])
     axThrust.plot(time,thrust,'k', label='command')
-    axThrust.plot([0,Tf*len(GATE_ORDER)],[fmin,fmin],'r--', label='fmin')
-    axThrust.fill_between([0,Tf*len(GATE_ORDER)],[fmin,fmin],-1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
-    axThrust.fill_between([0,Tf*len(GATE_ORDER)],[fmax,fmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
-    axThrust.plot([0,Tf*len(GATE_ORDER)],[fmax,fmax],'r-.', label='fmax')
+    axThrust.plot([0,Tf],[fmin,fmin],'r--', label='fmin')
+    axThrust.fill_between([0,Tf],[fmin,fmin],-1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+    axThrust.fill_between([0,Tf],[fmax,fmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+    axThrust.plot([0,Tf],[fmax,fmax],'r-.', label='fmax')
 
     axThrust.set_ylabel('Thrust [m/s^2]')
     axThrust.legend()
 
     axOmega.plot(time, ratesMagn,'k',label='command magnitude')
-    axOmega.plot([0,Tf*len(GATE_ORDER)],[wmax,wmax],'r--', label='wmax')
-    axOmega.fill_between([0,Tf*len(GATE_ORDER)],[wmax,wmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
+    axOmega.plot([0,Tf],[wmax,wmax],'r--', label='wmax')
+    axOmega.fill_between([0,Tf],[wmax,wmax], 1000,facecolor=infeasibleAreaColour, color=infeasibleAreaColour)
     axOmega.set_xlabel('Time [s]')
     axOmega.set_ylabel('Body rates [rad/s]')
     axOmega.legend()
