@@ -68,8 +68,8 @@ class StateMachine(object):
       # if it is close enough to gate, transit to gate passing, otherwise stay
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=None)
 
-    print(self._env.states[2], desired_states[2])
     actions = self._controller.compute_action(self._env.states, desired_states)
+    print('action', actions)
     self._env.step(actions)
 
 
