@@ -27,7 +27,7 @@ class GroundTruthEnv(AbstractEnv):
       self.states[9:12] = self.imu_queue.get()
 
     if not self.gt_queue.empty():
-      position, pose, velocity = self.gt_queue.get()
+      cur_time, position, pose, velocity = self.gt_queue.get()
       self.states[0:3] = position
       self.states[3:6] = pose
       self.states[6:9] = velocity

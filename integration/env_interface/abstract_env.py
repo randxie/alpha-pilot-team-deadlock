@@ -53,7 +53,7 @@ class AbstractEnv(gym.Env):
     """
     # wrap angles
     self.states[3:6] = wrap_angle(self.states[3:6])
-    self._publish_action(action)
+    self.publish_actions(action)
     self.estimate_states()
 
     return self.states, 0, False, {}
@@ -62,7 +62,7 @@ class AbstractEnv(gym.Env):
     """Estimate state by sensor fusion."""
     raise NotImplementedError('You have to implement your state estimator.')
 
-  def _publish_actions(self, actions):
+  def publish_actions(self, actions):
     """Publish control actions.
 
     :param actions: [u_thrust, u_phi, u_theta, u_psi]
@@ -104,7 +104,7 @@ class AbstractEnv(gym.Env):
     :return:
     """
     cur_gt = data.transforms[0].transform
-    cur_time = rospy.get_rostime()
+    cur_time = time.time()
 
     # get accurate position information
     position = np.array([cur_gt.translation.x, cur_gt.translation.y, cur_gt.translation.z])
@@ -118,7 +118,7 @@ class AbstractEnv(gym.Env):
     if self.gt_queue.empty():
       t_p, position_p, pose_p = self.start_time, np.zeros(3), np.zeros(3)
     else:
-      t_p, position_p, pose_p, _ = self.queue.get()
+      t_p, position_p, pose_p, _ = self.gt_queue.get()
 
     velocity = (position - position_p) / (cur_time - t_p)
     self.gt_queue.put((cur_time, position, pose, velocity))
@@ -131,7 +131,7 @@ class AbstractEnv(gym.Env):
     """
     if self.ir_marker_queue.full():
       self.ir_marker_queue.get()
-    self.ir_marker_queue.put(data.marker)
+    self.ir_marker_queue.put(data.markers)
 
   def attach_listeners(self):
     """Subscribe to different sensors.

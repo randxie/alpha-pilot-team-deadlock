@@ -3,13 +3,13 @@ import numpy as np
 import rospy
 from controller.basic_controller import PIDController
 from env_interface.ground_truth_env import GroundTruthEnv
-from enum import Enum
 from planner.heuristic_planner import HeuristicPlanner
+import time
 
 GATE_ORDER = [19, 10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6]
 
 
-class SystemState(Enum):
+class SystemState(object):
   START = 0
   HOVERING = 1
   EXPLORING = 2
@@ -47,7 +47,7 @@ class StateMachine(object):
 
   def try_state_transition(self, target_sys_state):
     if target_sys_state == SystemState.HOVERING:
-      if np.abs(self._env.state[3] - self.hovering_height) < 0.2:
+      if np.abs(self._env.states[2] - self.hovering_height) < 0.2:
         self._sys_state = SystemState.HOVERING
         return
       else:
@@ -63,18 +63,21 @@ class StateMachine(object):
           pass
       elif self._sys_state == SystemState.GATE_PASSING:
         pass
+      desired_states = np.array([0, 0, self.hovering_height, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     elif target_sys_state == SystemState.GATE_PASSING:
       # if it is close enough to gate, transit to gate passing, otherwise stay
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=None)
 
+    print(self._env.states[2], desired_states[2])
     actions = self._controller.compute_action(self._env.states, desired_states)
-    self._env.publish_actions(actions)
+    self._env.step(actions)
 
 
 if __name__ == '__main__':
-  start_time = rospy.get_rostime()
+  start_time = time.time()
   controller = PIDController()  # controller should be independent of time
   env = GroundTruthEnv(start_time)
+  env.spin_listeners()
   planner = HeuristicPlanner(start_time)
   localizer = None
   explorer = None

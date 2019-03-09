@@ -1,5 +1,6 @@
 import numpy as np
 import rospy
+import time
 
 
 class HeuristicPlanner():
@@ -18,12 +19,12 @@ class HeuristicPlanner():
 
     :return: desired state for next step
     """
-    dt = rospy.get_rostime() - self._start_time
-    if dt < 15:
+    dt = time.time() - self._start_time
+    if dt < 30:
       desired_states = [0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    elif dt < 30:
+    elif dt < 60:
       desired_states = [15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    elif dt < 45:
+    elif dt < 90:
       desired_states = [15, 0, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
     else:
       desired_states = [15, 5, 6, 0, 0, np.pi / 2, 0, 0, 0, 0, 0, 0]
