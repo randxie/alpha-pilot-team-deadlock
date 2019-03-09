@@ -18,7 +18,7 @@ def score_pipeline(args):
   # predictor = Predictor(model_dir, image_dir, batch_size=1, flyable_region_detector=flyable_region_detector)
 
   # mask rcnn version
-  model_dir = 'weights/maskrcnn-inception-v2-larger-mask-100x100'
+  model_dir = 'weights/maskrcnn-inception-v2-105x105-conv4'
   predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1)
   predictor.run_inference(visualize=args.visualize)
   predictor.output_submission_file(output_filename=submission_filename)

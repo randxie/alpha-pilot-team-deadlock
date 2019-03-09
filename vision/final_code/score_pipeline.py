@@ -52,7 +52,7 @@ def score_pipeline(args):
   """
 
   # mask rcnn solution
-  model_dir = 'weights/maskrcnn-inception-v2-larger-mask-100x100' # 'weights/maskrcnn-inception-v2'
+  model_dir = 'weights/maskrcnn-inception-v2-105x105-conv4' # 'weights/maskrcnn-inception-v2'
   predictor = MaskRCNNPredictor(model_dir, image_dir, batch_size=1, ground_truth_dict=ground_truth_dict)
   predictor.run_inference(visualize=args.visualize)
 

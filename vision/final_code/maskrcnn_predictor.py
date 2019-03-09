@@ -102,7 +102,7 @@ class MaskRCNNPredictor(object):
 
     return output_array, coordinates
 
-  def run_inference(self, visualize=False, save_img=False):
+  def run_inference(self, visualize=False, save_img=True):
     # for getting time and predictions
     self.time_all = []
     self.pred_dict = {}
@@ -167,30 +167,23 @@ class MaskRCNNPredictor(object):
     contours, _ = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # generate approximate polygon, this should be rectangle most of the time
-    epsilon = 0.05 * cv2.arcLength(contours[0], True)
+    epsilon = 0.025 * cv2.arcLength(contours[0], True)
     hull = cv2.convexHull(contours[0])
     approx = cv2.approxPolyDP(hull, epsilon, True)
 
     if approx.size != 8:
       # if approxPolyDP does not generate a rectangle, fit a simple rectangle
-      print(approx)
       rect = cv2.minAreaRect(contours[0])
       approx = cv2.boxPoints(rect)
       approx[:, 0] = approx[:, 0] + xmin
       approx[:, 1] = approx[:, 1] + ymin
 
-      #plt.imshow(image[ymin:(ymin + h), xmin:(xmin + w), :])
-      #plt.imshow(mask, alpha=0.4)
-      #plt.show()
-      #plt.close()
     else:
       approx[:, 0, 0] = approx[:, 0, 0] + xmin
       approx[:, 0, 1] = approx[:, 0, 1] + ymin
 
       new_mask = np.zeros((img_height, img_width))
       new_mask[ymin:(ymin + h), xmin:(xmin + w)] = mask
-
-
 
     """
     image = image[ymin:(ymin + h), xmin:(xmin + w), :]

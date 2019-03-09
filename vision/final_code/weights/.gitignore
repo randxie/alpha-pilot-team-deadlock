@@ -1,0 +1,5 @@
+*
+
+# only keep this file
+!.gitignore
+!maskrcnn-inception-v2-105x105-conv4
