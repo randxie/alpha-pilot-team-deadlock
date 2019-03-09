@@ -13,13 +13,13 @@ def main():
     # rospy.init_node('trajectory_subscriber', anonymous = True);
     # rospy.Subscriber('DESIRED_WAYPOINTS', ,callback);
     # rospy.spin();
-    #
-    # Predefined gates
+
+
 
     # Define the trajectory starting state:
-    pos0 = [0, 0, 0] #position
-    vel0 = [0, 0, 0] #velocity
-    acc0 = [0, 0, 0] #acceleration
+    pos0 = [0, 0, 0] # position
+    vel0 = [0, 0, 0] # velocity
+    acc0 = [0, 0, 0] # acceleration
 
     # Define the goal state:
     posf = [1, 2, 3]  # position
@@ -27,7 +27,9 @@ def main():
     accf = [0, 0, 0]  # acceleration
 
     # Define the duration:
-    Tf = 5
+    tmin = 0; # minimum time
+    tmax = 10; # maximum time
+    Tf = np.linspace(tmin, tmax, 100);
 
     # Define the input limits:
     fmin = 5  #[m/s**2]
@@ -38,54 +40,69 @@ def main():
     # Define how gravity lies:
     gravity = [0,0,-9.81]
 
-    # Trajectory generation
+    #########################
+    # Trajectory generation #
+    #########################
     position = list();
     velocity = list();
     acceleration = list();
     thrust = list();
     ratesMagn = list();
-    for i in range(len(GATE_ORDER)):
+    trajCost = list();
+    N = 100;
+
+    # Grid search optimization
+    for i in range(len(Tf)):
         traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity);
-        traj.set_goal_position(gate[GATE_ORDER[i]-1]);
+        traj.set_goal_position(posf);
         traj.set_goal_velocity(velf);
         traj.set_goal_acceleration(accf);
-        traj.generate(Tf);
-        N = 100;
-        time = np.linspace(0, Tf, N);
-        for j in range(N):
-            t = time[j];
-            position.append(traj.get_position(t));
-            velocity.append(traj.get_velocity(t));
-            acceleration.append(traj.get_acceleration(t));
-            thrust.append(traj.get_thrust(t));
-            ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
+        traj.generate(Tf[i]);
+        cost = traj.get_cost();
+        if (traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec)):
+            trajCost.append(traj.get_cost());
+        else:
+            trajCost.append(float("inf"));
 
-        ###############
-        # Feasibility #
-        ###############
-
-        # Test input feasibility
-        inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
-
-        # Test whether we fly into the floor
-        floorPoint  = [0,0,0];  # a point on the floor
-        floorNormal = [0,0,1];  # we want to be in this direction of the point (upwards)
-        positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal);
-
-        for i in range(3):
-            print("Axis #" , i);
-            print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i));
-        print("Total cost = " , traj.get_cost());
-        print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")");
-        print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")");
-
-        # Reset using last point
-        pos0 = position[-1];
-        vel0 = velocity[-1];
-        acc0 = acceleration[-1];
-        traj.reset();
-
-    plot(Tf, GATE_ORDER, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax);
+    # Find index of minimum cost
+    minPos = trajCost.index(min(trajCost));
+    print(minPos);
+    # Find corresponding time
+    timeToGo = Tf[minPos];
+    # Obtain the trajectory with the lowest cost
+    # time = np.linspace(0, timeToGo, N);
+    # traj.generate(timeToGo);
+    # for j in range(N):
+    #     t = time[j];
+    #     position.append(traj.get_position(t));
+    #     velocity.append(traj.get_velocity(t));
+    #     acceleration.append(traj.get_acceleration(t));
+    #     thrust.append(traj.get_thrust(t));
+    #     ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
+    #
+    # ###############
+    # # Feasibility #
+    # ###############
+    #
+    # # Test input feasibility
+    # inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
+    #
+    # # Test whether we fly into the floor
+    # floorPoint  = [0,0,0];  # a point on the floor
+    # floorNormal = [0,0,1];  # we want to be in this direction of the point (upwards)
+    # positionFeasible = traj.check_position_feasibility(floorPoint, floorNormal);
+    #
+    # for i in range(3):
+    #     print("Axis #" , i);
+    #     print("\talpha = " ,traj.get_param_alpha(i), "\tbeta = "  ,traj.get_param_beta(i), "\tgamma = " ,traj.get_param_gamma(i));
+    # print("Total cost = " , traj.get_cost());
+    # print("Input feasibility result: ",    quadtraj.InputFeasibilityResult.to_string(inputsFeasible),   "(", inputsFeasible, ")");
+    # print("Position feasibility result: ", quadtraj.StateFeasibilityResult.to_string(positionFeasible), "(", positionFeasible, ")");
+    #
+    # # Reset
+    # traj.reset();
+    #
+    # plot(Tf, GATE_ORDER, N, position, velocity, acceleration, thrust, ratesMagn, fmin, fmax, wmax);
 
     # # Publish waypoints
     # pub = rospy.Publisher('trajectory', array, queue_size = 10)
