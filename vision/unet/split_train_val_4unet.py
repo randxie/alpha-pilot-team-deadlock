@@ -25,9 +25,9 @@ cv2.setUseOptimized(True)
 IMG_RESIZE = 0.5
 
 FUNC_DIR = os.path.dirname(os.path.realpath(__file__))
-IMG_DIR = os.path.join(FUNC_DIR, "..\\final_code\\training\\images")
-TRAIN_LABEL = os.path.join(FUNC_DIR, "..\\label_generation\\annotations\\gate_train.json")
-VAL_LABEL = os.path.join(FUNC_DIR, "..\\label_generation\\annotations\\\\gate_val.json")
+IMG_DIR = os.path.join(FUNC_DIR, "..", "final_code", "training", "images")
+TRAIN_LABEL = os.path.join(FUNC_DIR, "..", "label_generation", "annotations", "gate_train.json")
+VAL_LABEL = os.path.join(FUNC_DIR, "..", "label_generation", "annotations", "gate_val.json")
 
 TRAIN_DIR = os.path.join(FUNC_DIR, "train")
 VAL_DIR = os.path.join(FUNC_DIR, "val")
