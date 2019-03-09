@@ -20,12 +20,12 @@ def main():
     acc0 = [0, 0, 0] # acceleration
 
     # Define the goal state:
-    posf = [1, 2, 3]  # position
+    posf = [1, 2, 1]  # position
     velf = [5, 5, 0]  # velocity
     accf = [0, 0, 0]  # acceleration
 
     # Define the duration:
-    tmin = 1; # minimum time, has to be > 0
+    tmin = 0.1; # minimum time, has to be > 0
     tmax = 10; # maximum time
     Tf = np.linspace(tmin, tmax, 1000);
 
@@ -60,11 +60,9 @@ def main():
             print(Tf[i]);
             break;
 
-    # Find minimum feasible time
-    timeToGo = Tf[i];
     # Obtain the trajectory with the lowest time
+    timeToGo = Tf[i];
     time = np.linspace(0, timeToGo, N);
-    traj.generate(timeToGo);
     print(traj.get_cost());
     for j in range(N):
         t = time[j];
