@@ -28,20 +28,20 @@ class PIDController(object):
     [x_d, y_d, z_d, phi_d, theta_d, psi_d, x_dot_d, y_dot_d, z_dot_d, p_d, q_d, r_d] = list(desired_states)
 
     # firstly do altitude control
-    az = 1
+    az = 0.5
     az_dot = 5
     ez = z_d - z
     ez_dot = z_dot_d - z_dot
     uz = m / (np.cos(phi) * np.cos(theta)) * (az * ez + GRAVITY_COEFF + az_dot * ez_dot)  # - az * (ez_dot + az * ez)
 
     # then we do position control
-    ax = 1
+    ax = 0.5
     ax_dot = 5
     ex = x_d - x
     ex_dot = x_dot_d - x_dot
     ux = (ax * ex + ax_dot * ex_dot)
 
-    ay = 1
+    ay = 0.5
     ay_dot = 5
     ey = y_d - y
     ey_dot = y_dot_d - y_dot
