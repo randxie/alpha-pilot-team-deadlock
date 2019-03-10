@@ -78,9 +78,10 @@ class PIDController(object):
   """
 
   def __init__(self, cascaded_attitude=False):
-    # Cache the errors for derivative and integral 
+
     self.cascaded_attitude = cascaded_attitude
 
+    # Cache the errors for derivative and integral 
     self.err_x_prev = 0.0
     self.err_y_prev = 0.0
     self.err_z_prev = 0.0
@@ -185,7 +186,7 @@ class PIDController(object):
     phi_d = np.arctan2((ux * np.sin(psi) - uy * np.cos(psi)), (GRAVITY_COEFF + uz)) * np.cos(theta)
     theta_d = np.arctan2((ux * np.cos(psi) + uy * np.sin(psi)), (GRAVITY_COEFF + uz))
     
-    err_phi = phi_d - phi
+    err_phi   = phi_d - phi
     err_theta = theta_d - theta
     err_psi   = psi_d - psi
 
@@ -200,9 +201,9 @@ class PIDController(object):
 
     if self.cascaded_attitude: # (Control angular acceleration)
         # Attitude outer loop 
-        phi_dot_d = aphi*err_phi + aphi_int*self.err_phi_sum
+        phi_dot_d   = aphi*err_phi + aphi_int*self.err_phi_sum
         theta_dot_d = atheta*err_theta + atheta_int*self.err_theta_sum
-        psi_dot_d = apsi*err_psi + apsi_int*self.err_psi_sum 
+        psi_dot_d   = apsi*err_psi + apsi_int*self.err_psi_sum 
 
         err_p = phi_dot_d - p
         err_q = theta_dot_d - q
