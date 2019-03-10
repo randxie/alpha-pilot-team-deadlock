@@ -48,7 +48,7 @@ class MaskRCNNPredictor(object):
 
       output_array[0:8] = coordinates
       output_array = [output_array.tolist()]
-      return [list(output_array)]
+      return output_array
     else:
       output_array = []
       coordinates = []
