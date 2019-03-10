@@ -16,14 +16,13 @@ cv2.setUseOptimized(True)
 
 class MaskRCNNPredictor(object):
 
-  def __init__(self, model_dir, img, flyable_region_detector='mask'):
+  def __init__(self, model_dir):
     self.model_dir = model_dir
-    self.img = img
     self.predict_fn = predictor.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
-    self.avg_time = 2  # on average, each image can not exceed 2 sec inference time
-    self.flyable_region_detector = flyable_region_detector
 
-  def predict(self, image_array):
+  def predict(self, img):
+    original_image = img
+    image_array = [original_image]
     output_dict = self.predict_fn({'inputs': image_array})
     output_dict = self._reformat_output_dict(output_dict)
 
@@ -35,17 +34,9 @@ class MaskRCNNPredictor(object):
       bbox = output_dict['detection_boxes'][0]
       mask = output_dict['detection_masks'][0, 0, :, :]
 
-      if self.flyable_region_detector == 'mask':
-        coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
+      coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
                                                        img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
-        #In case of failure, use mask
-        if len(coordinates) == 0:
-          coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
-                                                           img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
-      else:
-        coordinates = self._create_coordinates_from_mask(bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH,
-                                                         img_height=ORIGINAL_IMAGE_HEIGHT, image=image_array[0])
-
+      
       output_array[0:8] = coordinates
       output_array = [output_array.tolist()]
       return output_array
@@ -53,17 +44,6 @@ class MaskRCNNPredictor(object):
       output_array = []
       coordinates = []
       return [output_array]
-
-  def run_inference(self):
-    # for getting time and predictions
-    self.pred_dict = []
-
-    # generate prediction
-    original_image = self.img
-    image_array = [original_image]
-    output_array = self.predict(image_array)
-    
-    return output_array
 
   def _create_coordinates_from_mask(self, bbox, mask, img_width=ORIGINAL_IMAGE_WIDTH, img_height=ORIGINAL_IMAGE_HEIGHT,
                                     image=None):
@@ -80,9 +60,6 @@ class MaskRCNNPredictor(object):
     # convert mask to threshold and find contour
     ret, thresh = cv2.threshold(mask, 0.5, 1, 0)
 
-    # OpenCV 3.x
-    # _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # OpenCV 4.x
     contours, _ = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # generate approximate polygon, this should be rectangle most of the time

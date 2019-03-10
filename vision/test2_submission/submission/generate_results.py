@@ -9,11 +9,10 @@ from maskrcnn_predictor import MaskRCNNPredictor
 # Implement a function that takes an image as an input, performs any preprocessing steps and outputs a list of bounding box detections and assosciated confidence score. 
 
 class GenerateFinalDetections():
-    def __init__(self):
-        self.seed = 2018
+    def __init__(self, model_dir = 'weights/maskrcnn-inception-v2-105x105-conv4'):
+        self.predictor = MaskRCNNPredictor(model_dir)
         
     def predict(self,img):
-        model_dir = 'weights/maskrcnn-inception-v2-105x105-conv4' # 'weights/maskrcnn-inception-v2'
-        predictor = MaskRCNNPredictor(model_dir, img)
-        output_array = predictor.run_inference()
+         # 'weights/maskrcnn-inception-v2'
+        output_array = predictor.predict(img)
         return output_array
