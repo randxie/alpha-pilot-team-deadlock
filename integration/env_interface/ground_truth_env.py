@@ -47,14 +47,13 @@ class GroundTruthEnv(AbstractEnv):
       self.vins_start_pos = (position, pose, velocity)
       self.is_vins_inited = True
 
-    self.states[6:9] = velocity
-    print('vins mono velocity', velocity)
+    #self.states[6:9] = velocity
 
   def attach_listeners(self):
     rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self._ground_truth_callback)
     rospy.Subscriber('/uav/sensors/imu', s_msgs.Imu, self._imu_callback)
-    rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, self._ir_marker_callback)
-    rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, self._range_finder_callback)
+    #rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, self._ir_marker_callback)
+    #rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, self._range_finder_callback)
     #rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, self._vins_callback)
     rospy.spin()
 
@@ -67,4 +66,3 @@ class GroundTruthEnv(AbstractEnv):
       self.states[0:3] = position
       self.states[3:6] = pose
       self.states[6:9] = velocity
-      #print('true velocity', velocity)

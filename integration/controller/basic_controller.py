@@ -29,20 +29,20 @@ class PIDController(object):
 
     # firstly do altitude control
     az = 0.5
-    az_dot = 5
+    az_dot = 4
     ez = z_d - z
     ez_dot = z_dot_d - z_dot
     uz = m / (np.cos(phi) * np.cos(theta)) * (az * ez + GRAVITY_COEFF + az_dot * ez_dot)  # - az * (ez_dot + az * ez)
 
     # then we do position control
     ax = 0.5
-    ax_dot = 5
+    ax_dot = 4
     ex = x_d - x
     ex_dot = x_dot_d - x_dot
     ux = (ax * ex + ax_dot * ex_dot)
 
     ay = 0.5
-    ay_dot = 5
+    ay_dot = 4
     ey = y_d - y
     ey_dot = y_dot_d - y_dot
     uy = (ay * ey + ay_dot * ey_dot)

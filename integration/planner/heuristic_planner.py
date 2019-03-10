@@ -3,7 +3,7 @@ import rospy
 import time
 
 
-class HeuristicPlanner():
+class HeuristicPlanner(object):
   def __init__(self, start_time):
     """
 

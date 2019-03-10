@@ -14,10 +14,10 @@ from queue import Queue
 from utils.util_transform import wrap_angle
 
 DEFAULT_CONFIG = {
-  'range_finder_queue_size': 1,
-  'imu_queue_size': 1,
-  'gt_queue_size': 1,
-  'ir_marker_queue_size': 1,
+  'range_finder_queue_size': 5,
+  'imu_queue_size': 5,
+  'gt_queue_size': 5,
+  'ir_marker_queue_size': 5,
 }
 
 
@@ -30,7 +30,7 @@ class AbstractEnv(gym.Env):
     # for control execution
     rospy.init_node('fg_env', anonymous=True)
     self.rate = rospy.Rate(100)  # 100hz
-    self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=500)
+    self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=100)
 
     # measurements
     # here, internal queues are maintained for memory sharing
@@ -129,6 +129,7 @@ class AbstractEnv(gym.Env):
     :param data:
     :return:
     """
+    print('marker')
     if self.ir_marker_queue.full():
       self.ir_marker_queue.get()
     self.ir_marker_queue.put(data.markers)
@@ -146,3 +147,6 @@ class AbstractEnv(gym.Env):
 
   def clean_up(self):
     self.listener_thread.join()
+
+  def __del__(self):
+    self.clean_up()
