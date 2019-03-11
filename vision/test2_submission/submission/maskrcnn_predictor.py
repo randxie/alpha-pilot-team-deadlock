@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import os
 import scipy
 import tensorflow as tf
 from tensorflow.contrib import predictor
@@ -11,6 +10,7 @@ CATEGORY_INDEX = {1: {'name': 'gate'}}
 # validate this assumption with competition host
 ORIGINAL_IMAGE_WIDTH = 1296
 ORIGINAL_IMAGE_HEIGHT = 864
+N_WARMUP = 4
 
 cv2.setUseOptimized(True)
 
@@ -19,6 +19,14 @@ class MaskRCNNPredictor(object):
   def __init__(self, model_dir):
     self.model_dir = model_dir
     self.predict_fn = predictor.from_saved_model(model_dir, config=tf.ConfigProto(log_device_placement=True))
+
+    # warm-up
+    try:
+      for _ in range(N_WARMUP):
+        test_img = np.zeros((ORIGINAL_IMAGE_HEIGHT, ORIGINAL_IMAGE_WIDTH))
+        _ = self.predict_fn({'inputs': test_img})
+    except Exception as e:
+      pass
 
   def predict(self, img):
     original_image = img
