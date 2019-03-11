@@ -1,11 +1,13 @@
 import flightgoggles.msg as fg_msg
 import gym
 import mav_msgs.msg as mav_msgs
+from multiprocessing import Process
 import nav_msgs.msg as nav_msgs
 import numpy as np
 import time
 import rospy
 import sensor_msgs.msg as s_msgs
+import sys
 import tf
 import tf2_msgs.msg
 import threading
@@ -14,12 +16,14 @@ from queue import Queue
 from utils.util_transform import wrap_angle
 
 DEFAULT_CONFIG = {
-  'range_finder_queue_size': 5,
-  'imu_queue_size': 5,
-  'gt_queue_size': 5,
-  'ir_marker_queue_size': 5,
+  'range_finder_queue_size': 1,
+  'imu_queue_size': 1,
+  'gt_queue_size': 1,
+  'ir_marker_queue_size': 1,
 }
 
+# reduce context switching
+sys.setcheckinterval(1000)
 
 class AbstractEnv(gym.Env):
   """Environment Interface"""
@@ -30,7 +34,7 @@ class AbstractEnv(gym.Env):
     # for control execution
     rospy.init_node('fg_env', anonymous=True)
     self.rate = rospy.Rate(100)  # 100hz
-    self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=100)
+    self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=1)
 
     # measurements
     # here, internal queues are maintained for memory sharing
@@ -46,15 +50,15 @@ class AbstractEnv(gym.Env):
   def reset(self):
     self.states = np.zeros(12)
 
-  def step(self, action):
+  def step(self, actions):
     """
-    :param action: [u_thrust, u_phi, u_theta, u_psi]
+    :param actions: [u_thrust, u_phi, u_theta, u_psi]
     :return:
     """
     # wrap angles
-    self.states[3:6] = wrap_angle(self.states[3:6])
-    self.publish_actions(action)
     self.estimate_states()
+    self.states[3:6] = wrap_angle(self.states[3:6])
+    self.publish_actions(actions)
 
     return self.states, 0, False, {}
 
@@ -83,7 +87,7 @@ class AbstractEnv(gym.Env):
     :return:
     """
     if self.range_finder_queue.full():
-      self.range_finder_queue.get()
+      self.range_finder_queue.get(False)
     self.range_finder_queue.put(-data.range)
 
   def _imu_callback(self, data):
@@ -93,7 +97,7 @@ class AbstractEnv(gym.Env):
     :return:
     """
     if self.imu_queue.full():
-      self.imu_queue.get()
+      self.imu_queue.get(False)
     angular_velocity = np.array([data.angular_velocity.x, data.angular_velocity.y, data.angular_velocity.z])
     self.imu_queue.put(angular_velocity)
 
@@ -118,7 +122,7 @@ class AbstractEnv(gym.Env):
     if self.gt_queue.empty():
       t_p, position_p, pose_p = self.start_time, np.zeros(3), np.zeros(3)
     else:
-      t_p, position_p, pose_p, _ = self.gt_queue.get()
+      t_p, position_p, pose_p, _ = self.gt_queue.get(False)
 
     velocity = (position - position_p) / (cur_time - t_p)
     self.gt_queue.put((cur_time, position, pose, velocity))
@@ -131,7 +135,7 @@ class AbstractEnv(gym.Env):
     """
     print('marker')
     if self.ir_marker_queue.full():
-      self.ir_marker_queue.get()
+      self.ir_marker_queue.get(False)
     self.ir_marker_queue.put(data.markers)
 
   def attach_listeners(self):

@@ -43,9 +43,12 @@ class FgVinsEnv(AbstractEnv):
     self.vins_queue.put((position, pose, velocity))
 
   def attach_listeners(self):
-    rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self._ground_truth_callback)
-    rospy.Subscriber('/uav/sensors/imu', s_msgs.Imu, self._imu_callback)
-    rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, self._ir_marker_callback)
-    rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, self._range_finder_callback)
-    rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, self._vins_callback)
+    rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self._ground_truth_callback, queue_size=1000, buff_size=2 ** 20)
+    rospy.Subscriber('/uav/sensors/imu', s_msgs.Imu, self._imu_callback, queue_size=1000, buff_size=2 ** 20)
+    rospy.Subscriber('/uav/camera/left/ir_beacons', fg_msg.IRMarkerArray, self._ir_marker_callback, queue_size=1,
+                     buff_size=2 ** 20)
+    rospy.Subscriber('/uav/sensors/downward_laser_rangefinder', s_msgs.Range, self._range_finder_callback, queue_size=1,
+                     buff_size=2 ** 20)
+    rospy.Subscriber('/vins_estimator/odometry', nav_msgs.Odometry, self._vins_callback, queue_size=1,
+                     buff_size=2 ** 20)
     rospy.spin()

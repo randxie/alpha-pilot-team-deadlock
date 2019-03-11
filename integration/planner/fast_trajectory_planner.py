@@ -25,10 +25,14 @@ def _load_gate_info(filename):
     gate_locations = yaml.safe_load(f)
 
   gate_map = {}
+  vec_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
     gate_map[i] = np.mean(gate_locations['Gate%d' % i]['nominal_location'], axis=0)
-
-  return gate_map
+    A = np.array(gate_locations['Gate%d' % i]['nominal_location'])
+    vec = np.sum(np.matmul(np.linalg.inv(np.matmul(A.T, A)), A.T), axis=1)
+    vec = vec / np.linalg.norm(vec)
+    vec_map[i] = vec
+  return gate_map, vec_map
 
 
 class FastTrajectoryPlanner(object):
@@ -38,7 +42,7 @@ class FastTrajectoryPlanner(object):
     :param start_time: Start time to sync different components
     """
     self._start_time = start_time
-    self.gate_map = _load_gate_info('gt_gate_location.yaml')
+    self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
     self._time_between_gates = 40
     self.traj = None
@@ -67,10 +71,12 @@ class FastTrajectoryPlanner(object):
       self._is_computed = True
 
     dt = time.time() - self._start_time
-    p = self.traj.get_position(dt)
-    v = self.traj.get_velocity(dt)
-
-    desired_states = [p[0], p[1], p[2], 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    if dt > self._time_between_gates:
+      desired_states = [next_gate_loc[0], next_gate_loc[1], next_gate_loc[2], 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    else:
+      p = self.traj.get_position(dt)
+      v = self.traj.get_velocity(dt)
+      desired_states = [p[0], p[1], p[2], 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     return np.array(desired_states)
 
