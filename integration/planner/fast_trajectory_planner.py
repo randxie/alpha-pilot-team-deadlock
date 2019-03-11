@@ -44,7 +44,7 @@ class FastTrajectoryPlanner(object):
     self._start_time = start_time
     self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
-    self._time_between_gates = 40
+    self._time_between_gates = 5
     self.traj = None
 
   def get_desired_state(self, cur_state, next_gate_loc=None):
@@ -76,7 +76,7 @@ class FastTrajectoryPlanner(object):
     else:
       p = self.traj.get_position(dt)
       v = self.traj.get_velocity(dt)
-      desired_states = [p[0], p[1], p[2], 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      desired_states = [p[0], p[1], p[2], 0, 0, 0, v[0], v[1], v[2], 0, 0, 0]
 
     return np.array(desired_states)
 
