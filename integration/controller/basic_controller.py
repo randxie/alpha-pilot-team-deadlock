@@ -51,11 +51,11 @@ class PDController(object):
     phi_d = np.arctan2((ux * np.sin(psi) - uy * np.cos(psi)), (GRAVITY_COEFF + uz)) * np.cos(theta)
     theta_d = np.arctan2((ux * np.cos(psi) + uy * np.sin(psi)), (GRAVITY_COEFF + uz))
 
-    if np.abs(phi_d) > np.pi/6:
-      phi_d = np.pi/6 * np.sign(phi_d)
+    if np.abs(phi_d) > np.pi/3:
+      phi_d = np.pi/3 * np.sign(phi_d)
 
-    if np.abs(theta_d) > np.pi/6:
-      theta_d = np.pi/6 * np.sign(theta_d)
+    if np.abs(theta_d) > np.pi/3:
+      theta_d = np.pi/3 * np.sign(theta_d)
 
     aphi = 3
     aphi_dot = 0.5
