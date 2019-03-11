@@ -14,5 +14,5 @@ class GenerateFinalDetections():
         
     def predict(self,img):
          # 'weights/maskrcnn-inception-v2'
-        output_array = predictor.predict(img)
+        output_array = self.predictor.predict(img)
         return output_array
