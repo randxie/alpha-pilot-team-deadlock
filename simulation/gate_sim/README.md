@@ -1,5 +1,5 @@
 # V2
-Just unzip GateSim2.zip. Rest all is same. Almost error free bounding points as it uses 2 views one in which a mask is rendered onto the scene which is used to see the difference with non rendered image.
+Just unzip GateSim2.zip. Rest all is same. Almost error free bounding points as it uses 2 views one in which a mask is rendered onto the scene which is used to see the difference with non rendered image. Use `ppsim2.py` for generating the results.
 
 # V1
 ## Gate Simulator
