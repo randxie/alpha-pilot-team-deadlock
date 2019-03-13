@@ -1,7 +1,10 @@
+import cv2
+from cv_bridge import CvBridge
 import flightgoggles.msg as fg_msg
 import gym
 import mav_msgs.msg as mav_msgs
 from multiprocessing import Process
+import matplotlib.pyplot as plt
 import nav_msgs.msg as nav_msgs
 import numpy as np
 import time
@@ -20,10 +23,16 @@ DEFAULT_CONFIG = {
   'imu_queue_size': 1,
   'gt_queue_size': 1,
   'ir_marker_queue_size': 1,
+  'left_camera_queue_size': 10,
+  'right_camera_queue_size': 10,
 }
 
 # reduce context switching
 sys.setcheckinterval(1000)
+WIDTH = 1024
+HEIGHT = 768
+
+bridge = CvBridge()
 
 class AbstractEnv(gym.Env):
   """Environment Interface"""
@@ -43,6 +52,9 @@ class AbstractEnv(gym.Env):
     self.imu_queue = Queue(maxsize=self.config['imu_queue_size'])
     self.gt_queue = Queue(maxsize=self.config['gt_queue_size'])
     self.ir_marker_queue = Queue(maxsize=self.config['ir_marker_queue_size'])
+    self.left_camera_queue = Queue(maxsize=self.config['left_camera_queue_size'])
+    self.right_camera_queue = Queue(maxsize=self.config['right_camera_queue_size'])
+    self.gate_loc = {}
     self.listener_thread = threading.Thread(target=self.attach_listeners)
 
     self.reset()
@@ -133,10 +145,33 @@ class AbstractEnv(gym.Env):
     :param data:
     :return:
     """
-    print('marker')
     if self.ir_marker_queue.full():
       self.ir_marker_queue.get(False)
-    self.ir_marker_queue.put(data.markers)
+    for marker in data.markers:
+      self.gate_loc[marker.landmarkID.data] = (int(marker.x), int(marker.y))
+    # self.ir_marker_queue.put(data.markers)
+
+  def _left_camera_callback(self, data):
+    """For left camera image
+
+    :param data:
+    :return:
+    """
+    cv_image = cv2.cvtColor(bridge.imgmsg_to_cv2(data, desired_encoding="passthrough"), cv2.COLOR_BGR2GRAY)
+    if self.left_camera_queue.full():
+      self.left_camera_queue.get(False)
+    self.left_camera_queue.put(cv_image)
+
+  def _right_camera_callback(self, data):
+    """For right camera image
+
+    :param data:
+    :return:
+    """
+    cv_image = cv2.cvtColor(bridge.imgmsg_to_cv2(data, desired_encoding="passthrough"), cv2.COLOR_BGR2GRAY)
+    if self.right_camera_queue.full():
+      self.right_camera_queue.get(False)
+    self.right_camera_queue.put(cv_image)
 
   def attach_listeners(self):
     """Subscribe to different sensors.

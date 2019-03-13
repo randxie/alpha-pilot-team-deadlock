@@ -127,6 +127,7 @@ class StateMachine(object):
     actions = self._controller.compute_action(self._env.states, desired_states)
     print('states', self._env.states[0:3], desired_states[0:3], self._env.states[9:12])
     self._env.step(actions)
+    #self._env.plot_gate()
 
 
 if __name__ == '__main__':
