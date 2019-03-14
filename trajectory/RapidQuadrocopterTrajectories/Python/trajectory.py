@@ -24,6 +24,8 @@ def main():
     velf = [5, 5, 0]  # velocity
     accf = [0, 0, 0]  # acceleration
 
+    desired_yaw = 10;
+
     # Define the duration:
     tmin = 0.1; # minimum time, has to be > 0
     tmax = 10; # maximum time
@@ -34,6 +36,7 @@ def main():
     fmax = 25 #[m/s**2]
     wmax = 20 #[rad/s]
     minTimeSec = 0.02 #[s]
+    tol = 10; # Error tolerance
 
     # Define how gravity lies:
     gravity = [0,0,-9.81]
@@ -46,24 +49,29 @@ def main():
     acceleration = list();
     thrust = list();
     ratesMagn = list();
-    N = 1000;
+    N = 100;
 
     # Grid search optimization
-    for i in range(len(Tf)-1):
+    for i in range(len(Tf)):
         traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity);
         traj.set_goal_position(posf);
         traj.set_goal_velocity(velf);
         traj.set_goal_acceleration(accf);
         traj.generate(Tf[i]);
         cost = traj.get_cost();
+        # print((np.degrees(traj.get_final_yaw(tmin, Tf[i], N))))
+        #and (traj.check_final_yaw(tmin,Tf[i], N) - desired_yaw <= tol)
         if (traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec) == 0):
             print(Tf[i]);
             break;
+        #     print(abs(desired_yaw - (np.degrees(traj.get_final_yaw(tmin, Tf[i], N)))));
+        #     break;
 
     # Obtain the trajectory with the lowest time
     timeToGo = Tf[i];
-    time = np.linspace(0, timeToGo, N);
+    time = np.linspace(tmin, timeToGo, N);
     print(traj.get_cost());
+    print(timeToGo)
     for j in range(N):
         t = time[j];
         position.append(traj.get_position(t));
@@ -71,11 +79,11 @@ def main():
         acceleration.append(traj.get_acceleration(t));
         thrust.append(traj.get_thrust(t));
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
-    
+    print(thrust);
     ###############
     # Feasibility #
     ###############
-    
+
     # Test input feasibility
     inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
 
