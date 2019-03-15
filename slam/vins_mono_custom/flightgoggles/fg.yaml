@@ -69,7 +69,7 @@ fast_relocalization: 0             # useful in real-time and large project
 pose_graph_save_path: "~/Desktop" # save and load path
 
 #unsynchronization parameters
-estimate_td: 1                      # online estimate time offset between camera and imu
+estimate_td: 0                      # online estimate time offset between camera and imu
 td: 0.0                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
 
 #rolling shutter parameters
