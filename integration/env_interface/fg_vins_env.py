@@ -29,6 +29,7 @@ class FgVinsEnv(AbstractEnv):
     if self.vins_queue.full():
       self.vins_queue.get()
 
+    self.is_vins_inited = True
     # get estimated position
     position = np.array([data.pose.pose.position.x, data.pose.pose.position.y, data.pose.pose.position.z])
 
@@ -41,6 +42,28 @@ class FgVinsEnv(AbstractEnv):
     # get estimated velocity
     velocity = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.linear.z])
     self.vins_queue.put((position, pose, velocity))
+
+  def estimate_states(self):
+    if not self.imu_queue.empty():
+      try:
+        self.states[9:12] = self.imu_queue.get(False)
+      except Exception as e:
+        pass
+
+    if not self.gt_queue.empty():
+      try:
+        cur_time, position, pose, velocity = self.gt_queue.get(False)
+        self.states[0:3] = position
+        self.states[3:6] = pose
+        self.states[6:9] = velocity
+        if self.is_vins_inited and (not self.vins_queue.empty()):
+          position, pose, velocity = self.vins_queue.get(False)
+          print 'using vins'
+          self.states[0:3] = position
+          self.states[3:6] = pose
+          self.states[6:9] = velocity
+      except Exception as e:
+        pass
 
   def attach_listeners(self):
     rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self._ground_truth_callback, queue_size=1000, buff_size=2 ** 20)

@@ -4,6 +4,7 @@ import rospy
 from controller.basic_controller import PDController
 from controller.basic_controller import PIDController
 from env_interface.ground_truth_env import GroundTruthEnv
+from env_interface.fg_vins_env import FgVinsEnv
 from planner.heuristic_planner import HeuristicPlanner
 from planner.fast_trajectory_planner import FastTrajectoryPlanner
 import time
@@ -133,7 +134,7 @@ class StateMachine(object):
 if __name__ == '__main__':
   start_time = time.time()
   controller = PDController()  # controller should be independent of time
-  env = GroundTruthEnv(start_time)
+  env = FgVinsEnv(start_time)
   env.spin_listeners()
   planner = FastTrajectoryPlanner(start_time)
   localizer = None
