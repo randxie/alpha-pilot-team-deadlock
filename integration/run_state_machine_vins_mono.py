@@ -104,8 +104,8 @@ class StateMachine(object):
     elif target_sys_state == SystemState.GATE_ADJUST_POSE:
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center - gate_vec_loc * 1.5 * np.sign(TARGET_PSi[self._cur_gate_id]) * np.sign(gate_center[1])
-      if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 0.5:
+      gate_loc = gate_center - gate_vec_loc * 0 * np.sign(TARGET_PSi[self._cur_gate_id]) * np.sign(gate_center[1])
+      if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 0.2:
         self._cur_psi = TARGET_PSi[self._cur_gate_id + 1]
         self._sys_state = SystemState.GATE_ADJUST_POSE
       print('adjust pose', self._cur_gate_id, gate_loc, self._env.states[5], TARGET_PSi[self._cur_gate_id])
