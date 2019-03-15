@@ -5,23 +5,23 @@ SYNOPSIS
     Rapid trajectory generation for quadrocopters
 
 DESCRIPTION
-    
-    An implementation of the algorithm described in the paper "Rapid 
-    quadrocopter trajectory generation". Generates trajectories from an 
-    arbitrary initial state, to a final state described by (any combination 
+
+    An implementation of the algorithm described in the paper "Rapid
+    quadrocopter trajectory generation". Generates trajectories from an
+    arbitrary initial state, to a final state described by (any combination
     of) position, velocity, and acceleration.
-    
+
     Please refer to the paper for more information.
 
 EXAMPLES
 
-    Please see attached `demo.py` scripts for an example on how to use the 
-    trajectory generator. `demo.py` will generate a trajectory with given 
-    constraints, and return whether it passes feasibility tests. Then, some 
+    Please see attached `demo.py` scripts for an example on how to use the
+    trajectory generator. `demo.py` will generate a trajectory with given
+    constraints, and return whether it passes feasibility tests. Then, some
     plots are generated to visualise the resulting trajectory.
-    
+
 AUTHOR
-    
+
     Mark W. Mueller <mwm@mwm.im>
 
 LICENSE
@@ -40,8 +40,8 @@ LICENSE
 
     You should have received a copy of the GNU General Public License
     along with the code.  If not, see <http://www.gnu.org/licenses/>.
-    
-VERSION 
+
+VERSION
 
     0.1
 
@@ -52,16 +52,16 @@ import numpy as np
 
 class SingleAxisTrajectory:
     """A trajectory along one axis.
-    
+
     This is used to construct the optimal trajectory in one axis, planning
     in the jerk to achieve position, velocity, and/or acceleration final
     conditions. The trajectory is initialised with a position, velocity and
-    acceleration. 
-    
+    acceleration.
+
     The trajectory is optimal with respect to the integral of jerk squared.
-    
+
     Do not use this in isolation, this useful through the "RapidTrajectory"
-    class, which wraps three of these and allows to test input/state 
+    class, which wraps three of these and allows to test input/state
     feasibility.
 
     """
@@ -94,7 +94,7 @@ class SingleAxisTrajectory:
     def generate(self, Tf):
         """ Generate a trajectory of duration Tf.
 
-        Generate a trajectory, using the previously defined goal end states 
+        Generate a trajectory, using the previously defined goal end states
         (such as position, velocity, and/or acceleration).
 
         """
@@ -144,18 +144,18 @@ class SingleAxisTrajectory:
 
         #Calculate the cost:
         self._cost =  (self._g**2) + self._b*self._g*Tf + (self._b**2)*T2/3.0 + self._a*self._g*T2/3.0 + self._a*self._b*T3/4.0 + (self._a**2)*T4/20.0
-                
+
     def reset(self):
         """Reset the trajectory parameters."""
         self._cost = float("inf")
         self._accGoalDefined = self._velGoalDefined = self._posGoalDefined = False
         self._accPeakTimes = [None,None]
         pass
-    
+
     def get_jerk(self, t):
         """Return the scalar jerk at time t."""
         return self._g  + self._b*t  + (1.0/2.0)*self._a*t*t
-    
+
     def get_acceleration(self, t):
         """Return the scalar acceleration at time t."""
         return self._a0 + self._g*t  + (1.0/2.0)*self._b*t*t  + (1.0/6.0)*self._a*t*t*t
@@ -199,15 +199,15 @@ class SingleAxisTrajectory:
         for i in [0,1]:
             if self._accPeakTimes[i] <= t1: continue
             if self._accPeakTimes[i] >= t2: continue
-            
+
             aMinOut = min(aMinOut, self.get_acceleration(self._accPeakTimes[i]))
             aMaxOut = max(aMaxOut, self.get_acceleration(self._accPeakTimes[i]))
         return (aMinOut, aMaxOut)
- 
+
     def get_max_jerk_squared(self,t1, t2):
         """Return the extrema of the jerk squared trajectory between t1 and t2."""
         jMaxSqr = max(self.get_jerk(t1)**2,self.get_jerk(t2)**2)
-        
+
         if self._a:
             tMax = -self._b/self._a
             if(tMax>t1 and tMax<t2):
@@ -249,7 +249,7 @@ class SingleAxisTrajectory:
 class InputFeasibilityResult:
     """An enumeration of the possible outcomes for the input feasiblity test.
 
-    If the test does not return ``feasible``, it returns the outcome of the 
+    If the test does not return ``feasible``, it returns the outcome of the
     first segment that fails. The different outcomes are:
         0: Feasible -- trajectory is feasible with respect to inputs
         1: Indeterminable -- a section's feasibility could not be determined
@@ -258,7 +258,7 @@ class InputFeasibilityResult:
 
     """
     Feasible, Indeterminable, InfeasibleThrustHigh, InfeasibleThrustLow = range(4)
-    
+
     @classmethod
     def to_string(cls,ifr):
         """Return the name of the result."""
@@ -279,7 +279,7 @@ class StateFeasibilityResult:
     The result is either feasible (0), or infeasible (1).
     """
     Feasible, Infeasible = range(2)
-    
+
     @classmethod
     def to_string(cls,ifr):
         """Return the name of the result."""
@@ -288,7 +288,7 @@ class StateFeasibilityResult:
         elif ifr==StateFeasibilityResult.Infeasible:
             return "Infeasible"
         return "Unknown"
-            
+
 
 class RapidTrajectory:
     """Rapid quadrocopter trajectory generator.
@@ -311,8 +311,8 @@ class RapidTrajectory:
     combinations of states along the trajectory remain within some bounds can
     also be tested efficiently.
 
-		For more information, please see the publication 'A computationally 
-		efficient motion primitive for quadrocopter trajectory generation', 
+		For more information, please see the publication 'A computationally
+		efficient motion primitive for quadrocopter trajectory generation',
 		avaialable here: http://www.mwm.im/research/publications/
 
     NOTE: in the publication, axes are 1-indexed, while here they are
@@ -332,7 +332,7 @@ class RapidTrajectory:
           pos0 (array(3)): Initial position
           vel0 (array(3)): Initial velocity
           acc0 (array(3)): Initial acceleration
-          gravity (array(3)): The acceleration due to gravity, in the frame of 
+          gravity (array(3)): The acceleration due to gravity, in the frame of
               the trajectories (e.g. [0,0,-9.81] for an East-North-Up frame).
 
         """
@@ -345,7 +345,7 @@ class RapidTrajectory:
     def set_goal_position(self, pos):
         """ Define the goal end position.
 
-        Define the end position for all three axes. To leave components free, 
+        Define the end position for all three axes. To leave components free,
         list the end state as ``None`` in the argument, or use the function
         `set_goal_position_in_axis`.
 
@@ -358,7 +358,7 @@ class RapidTrajectory:
     def set_goal_velocity(self, vel):
         """ Define the goal end velocity.
 
-        Define the end velocity for all three axes. To leave components free, 
+        Define the end velocity for all three axes. To leave components free,
         list the end state as ``None`` in the argument, or use the function
         `set_goal_velocity_in_axis`.
 
@@ -408,7 +408,7 @@ class RapidTrajectory:
 
         Calculates a trajectory of duration `timeToGo`, with the problem data
         defined so far. If something (e.g. goal position) has not been defined,
-        it is assumed to be left free. 
+        it is assumed to be left free.
 
         """
         self._tf = timeToGo
@@ -439,11 +439,11 @@ class RapidTrajectory:
             An enumeration, of type InputFeasibilityResult.
 
         """
-        
+
         return self._check_input_feasibility_section(fminAllowed, fmaxAllowed,
                                     wmaxAllowed, minTimeSection, 0, self._tf)
 
-    def _check_input_feasibility_section(self, fminAllowed, fmaxAllowed, 
+    def _check_input_feasibility_section(self, fminAllowed, fmaxAllowed,
                              wmaxAllowed, minTimeSection, t1, t2):
         """Recursive test used by `check_input_feasibility`.
 
@@ -505,7 +505,7 @@ class RapidTrajectory:
             #indeterminate: must check more closely:
             tHalf = (t1 + t2) / 2.0
             r1 = self._check_input_feasibility_section(fminAllowed, fmaxAllowed, wmaxAllowed, minTimeSection, t1, tHalf)
-            
+
             if r1 == InputFeasibilityResult.Feasible:
                 #check the other half
                 return self._check_input_feasibility_section(fminAllowed, fmaxAllowed, wmaxAllowed, minTimeSection, tHalf, t2)
@@ -522,14 +522,14 @@ class RapidTrajectory:
         Test whether the position trajectory remains on the allowable side
         of a given plane. The plane is defined by giving a point on the plane,
         and the normal vector to the plane.
-        
+
         The result is of the class StateFeasibilityResult, either Feasible or
         Infeasible.
 
         Args:
-            boundaryPoint (array(3)): a point lying on the plane defining the 
+            boundaryPoint (array(3)): a point lying on the plane defining the
                 boundary.
-            boundaryNormal (array(3)): a vector defining the normal of the 
+            boundaryNormal (array(3)): a vector defining the normal of the
                 boundary. All points lying in the direction of the normal from
                 the boundary are taken as feasible.
 
@@ -540,16 +540,16 @@ class RapidTrajectory:
 
         boundaryNormal = np.array(boundaryNormal)
         boundaryPoint  = np.array(boundaryPoint)
-        
+
         #make sure it's a unit vector:
         boundaryNormal = boundaryNormal/np.linalg.norm(boundaryNormal)
 
         #first, we will build the polynomial describing the velocity of the a
-        #quadrocopter in the direction of the normal. Then we will solve for 
+        #quadrocopter in the direction of the normal. Then we will solve for
         #the zeros of this, which give us the times when the position is at a
         #critical point. Then we evaluate the position at these points, and at
-        #the trajectory beginning and end, to see whether we are feasible. 
-        
+        #the trajectory beginning and end, to see whether we are feasible.
+
         coeffs = np.zeros(5)
 
         for i in range(3):
@@ -558,16 +558,16 @@ class RapidTrajectory:
             coeffs[2] += boundaryNormal[i]*self._axis[i].get_param_gamma()/2.0             # t**2
             coeffs[3] += boundaryNormal[i]*self._axis[i].get_initial_acceleration()        # t
             coeffs[4] += boundaryNormal[i]*self._axis[i].get_initial_velocity()            # 1
-        
+
         #calculate the roots
         tRoots = np.roots(coeffs)
-        
+
         #test these times, and the initial & end times:
         for t in np.append(tRoots,[0,self._tf]):
             distToPoint = np.dot(self.get_position(t) - boundaryPoint, boundaryNormal)
             if distToPoint <= 0:
                 return StateFeasibilityResult.Infeasible
-        
+
         #all points tested feasible:
         return StateFeasibilityResult.Feasible
 
@@ -591,8 +591,8 @@ class RapidTrajectory:
         """ Return the vehicle's normal vector at time `t`.
 
         The vehicle's normal vector is that vector along which the thrust
-        points, e_3. The required body rates to fly a trajectory can be 
-        calculated by finding that angular velocity which rotates this 
+        points, e_3. The required body rates to fly a trajectory can be
+        calculated by finding that angular velocity which rotates this
         normal vector from one direction to another. Note that the result
         will be expressed in the planning frame, so that a rotation is
         necessary to the body frame.
@@ -611,7 +611,7 @@ class RapidTrajectory:
         """ Return the thrust input at time `t`.
 
         Returns the thrust required at time `t` along the trajectory, in units
-        of acceleration. 
+        of acceleration.
 
         Args:
             t (float): time argument.
@@ -625,10 +625,10 @@ class RapidTrajectory:
     def get_body_rates(self, t, dt=1e-3):
         """ Return the body rates input at time `t`, in inertial frame.
 
-        Returns the body rates required at time `t` along the trajectory, in 
+        Returns the body rates required at time `t` along the trajectory, in
         units of [rad/s]. This is done by discretizing the normal direction
         trajectory, with discretization `dt`.
-        
+
         **To get (p,q,r) rates, rotate these with the vehicle's attitude.**
 
         Args:
@@ -649,16 +649,42 @@ class RapidTrajectory:
         else:
             return np.array([0,0,0])
 
+    def get_rotation_matrix(psi, theta, phi):
+        """ Return the rotation matrix to body frame.
+
+        Args:
+            psi (float): roll angle
+            theta (float): pitch angle
+            phi (float): yaw angle
+
+        Returns:
+            np.array() rotation matrix to body frame.
+
+        """
+        return np.matrix([[                                     np.cos(theta)*np.cos(phi),                                      np.cos(theta)*np.sin(phi),            -np.sin(theta)],
+                          [-np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi),  np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), np.sin(psi)*np.cos(theta)],
+                          [ np.sin(psi)*np.sin(phi)+np.cos(psi)*np.sin(theta)*np.cos(phi), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi), np.cos(psi)*np.cos(theta)]]);
+
+    def get_final_yaw(self, tmin, tmax, N):
+        yawRate = list();
+        time = np.linspace(tmin, tmax, N);
+        for j in range(N):
+            t = time[j];
+            rates = self.get_body_rates(t);
+            yawRate.append(rates[2]);
+        return np.trapz(yawRate, dx=(tmax-tmin)/N);
+
+
 
     def get_cost(self):
         """ Return the total trajectory cost.
 
-        Returns the total trajectory cost. Trajectories with higher cost will 
-        tend to have more aggressive inputs (thrust and body rates), so that 
+        Returns the total trajectory cost. Trajectories with higher cost will
+        tend to have more aggressive inputs (thrust and body rates), so that
         this is a cheap way to compare two trajectories.
 
         """
-        return self._axis[0].get_cost() + self._axis[1].get_cost() + self._axis[2].get_cost() 
+        return self._axis[0].get_cost() + self._axis[1].get_cost() + self._axis[2].get_cost()
 
     def get_param_alpha(self, axNum):
         """Return the three parameters alpha which defines the trajectory."""
@@ -671,4 +697,3 @@ class RapidTrajectory:
     def get_param_gamma(self, axNum):
         """Return the three parameters gamma which defines the trajectory."""
         return self._axis[axNum].get_param_gamma()
-

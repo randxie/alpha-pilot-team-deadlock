@@ -1,0 +1,6 @@
+{
+    "C_Cpp.configurationWarnings": "Disabled",
+    "files.associations": {
+        "*.tcc": "cpp"
+    }
+}

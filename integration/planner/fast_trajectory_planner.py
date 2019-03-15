@@ -76,6 +76,7 @@ class FastTrajectoryPlanner(object):
     else:
       p = self.traj.get_position(dt)
       v = self.traj.get_velocity(dt)
+      r = self.traj.get_body_rates(dt)
       desired_states = [p[0], p[1], p[2], 0, 0, 0, v[0], v[1], v[2], 0, 0, 0]
 
     return np.array(desired_states)

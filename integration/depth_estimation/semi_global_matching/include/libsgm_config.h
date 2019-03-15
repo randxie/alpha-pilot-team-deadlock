@@ -1,0 +1,13 @@
+#ifndef __LIBSGM_CONFIG_H__
+#define __LIBSGM_CONFIG_H__
+
+/* #undef LIBSGM_SHARED */
+
+#define LIBSGM_VERSION 2.3.0
+#define LIBSGM_VERSION_MAJOR 2
+#define LIBSGM_VERSION_MINOR 3
+#define LIBSGM_VERSION_PATCH 0
+
+#define BUILD_OPENCV_WRAPPER
+
+#endif // __LIBSGM_CONFIG_H__
