@@ -140,7 +140,7 @@ if __name__ == '__main__':
   state_machine = StateMachine(env, controller, planner, localizer, explorer)
 
   while True:
-    rospy.sleep(0.02)
+    rospy.sleep(0.01)
     try:
       state_machine.spin()
     except rospy.ROSInterruptException:
