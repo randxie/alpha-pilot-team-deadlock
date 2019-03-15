@@ -8,6 +8,8 @@
 
 We are using Python2 here because tf package is supported in Python2.
 
+* If running scorer, make sure scorer.py is in same directory when you do rosrun
+
 ## Caution
 * This issue should have been fixed because of an issue with the Queue, but if you see the action's value is hanging there, stop and rerun the python script immediately.
 
