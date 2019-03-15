@@ -44,10 +44,10 @@ class FastTrajectoryPlanner(object):
     self._start_time = start_time
     self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
-    self._time_between_gates = 5
+    self._time_between_gates = 5.0
     self.traj = None
 
-  def get_desired_state(self, cur_state, next_gate_loc=None):
+  def get_desired_state(self, cur_state, next_gate_loc=None, next_gate_yaw=0, cur_gate_yaw=0):
     """Only used to pass the first gate.
 
     :param cur_state: State vector reflecting current quadcopter location
@@ -72,12 +72,16 @@ class FastTrajectoryPlanner(object):
 
     dt = time.time() - self._start_time
     if dt > self._time_between_gates:
-      desired_states = [next_gate_loc[0], next_gate_loc[1], next_gate_loc[2], 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      desired_states = [next_gate_loc[0], next_gate_loc[1], next_gate_loc[2], 0, 0, next_gate_yaw, 0, 0, 0, 0, 0, 0]
     else:
       p = self.traj.get_position(dt)
       v = self.traj.get_velocity(dt)
       r = self.traj.get_body_rates(dt)
-      desired_states = [p[0], p[1], p[2], 0, 0, 0, v[0], v[1], v[2], 0, 0, 0]
+      if dt < (self._time_between_gates - 0.2):
+        cur_yaw = cur_gate_yaw
+      else:
+        cur_yaw = next_gate_yaw * dt / self._time_between_gates
+      desired_states = [p[0], p[1], p[2], 0, 0, cur_yaw, v[0], v[1], v[2], 0, 0, 0]
 
     return np.array(desired_states)
 

@@ -18,6 +18,11 @@ import threading
 from queue import Queue
 from utils.util_transform import wrap_angle
 
+try:
+  import pbcvt
+except Exception as e:
+  print("failed to import libsgm")
+
 DEFAULT_CONFIG = {
   'range_finder_queue_size': 1,
   'imu_queue_size': 1,
@@ -29,8 +34,10 @@ DEFAULT_CONFIG = {
 
 # reduce context switching
 sys.setcheckinterval(1000)
-WIDTH = 1024
-HEIGHT = 768
+WIDTH = 1024 / 2
+HEIGHT = 768 / 2
+
+CENTER = np.array((HEIGHT/2, WIDTH/2))
 
 bridge = CvBridge()
 
@@ -56,6 +63,11 @@ class AbstractEnv(gym.Env):
     self.right_camera_queue = Queue(maxsize=self.config['right_camera_queue_size'])
     self.gate_loc = {}
     self.listener_thread = threading.Thread(target=self.attach_listeners)
+
+    self.height_offset = 1  # default offset for the quad
+
+    self.target_gate = 10
+    self.pixel_diff = None
 
     self.reset()
 
@@ -145,11 +157,25 @@ class AbstractEnv(gym.Env):
     :param data:
     :return:
     """
-    if self.ir_marker_queue.full():
-      self.ir_marker_queue.get(False)
+    target = []
     for marker in data.markers:
+      if marker.landmarkID.data == ('Gate%d' % self.target_gate):
+        target.append((marker.y, marker.x))
+
+    if target:
+      target_pixel = np.mean(target, axis=0)
+      tmp_pixel_diff = target_pixel - CENTER
+      self.pixel_diff = (tmp_pixel_diff[1], tmp_pixel_diff[0])
+    """
       self.gate_loc[marker.landmarkID.data] = (int(marker.x), int(marker.y))
-    # self.ir_marker_queue.put(data.markers)
+      img_left = self.left_camera_queue.get(False)
+      img_right = self.right_camera_queue.get(False)
+      if img_left is not None and img_right is not None:
+        disparity = pbcvt.depth_estimate(img_left, img_right)
+        print('central disparity: ', disparity[int(target_pixel[0]), int(target_pixel[1])])
+        plt.imshow(disparity, 'gray')
+        plt.pause(0.01)
+    """
 
   def _left_camera_callback(self, data):
     """For left camera image
