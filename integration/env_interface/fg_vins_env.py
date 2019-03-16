@@ -56,21 +56,19 @@ class FgVinsEnv(AbstractEnv):
       except Exception as e:
         pass
 
-    if not self.gt_queue.empty():
-      try:
-        if not self.is_vins_inited:
-          cur_time, position, pose, velocity = self.gt_queue.get(False)
+    try:
+      if not self.is_vins_inited:
+        if not self.range_finder_queue.empty():
+          height = self.range_finder_queue.get(False)
+          self.states[2] = height
+      else:
+        if not self.vins_queue.empty():
+          position, pose, velocity = self.vins_queue.get(False)
           self.states[0:3] = position
           self.states[3:6] = pose
           self.states[6:9] = velocity
-        else:
-          if not self.vins_queue.empty():
-            position, pose, velocity = self.vins_queue.get(False)
-            self.states[0:3] = position
-            self.states[3:6] = pose
-            self.states[6:9] = velocity
-      except Exception as e:
-        pass
+    except Exception as e:
+      pass
 
   def attach_listeners(self):
     rospy.Subscriber('/tf', tf2_msgs.msg.TFMessage, self._ground_truth_callback, queue_size=1000, buff_size=2 ** 20)

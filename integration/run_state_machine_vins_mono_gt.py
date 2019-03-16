@@ -143,7 +143,7 @@ if __name__ == '__main__':
   controller = PDController()  # controller should be independent of time
   env = FgVinsEnv(start_time)
   env.spin_listeners()
-  planner = FastTrajectoryPlanner(start_time, gate_locations=args.gate_yaml)
+  planner = FastTrajectoryPlanner(start_time, gate_location_yaml=args.gate_yaml)
   localizer = None
   explorer = None
   state_machine = StateMachine(env, controller, planner, localizer, explorer)
