@@ -36,13 +36,17 @@ def _load_gate_info(filename):
 
 
 class FastTrajectoryPlanner(object):
-  def __init__(self, start_time):
+  def __init__(self, start_time, gate_location_yaml=None):
     """
 
     :param start_time: Start time to sync different components
     """
     self._start_time = start_time
-    self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
+
+    if gate_location_yaml:
+      self.gate_map, self.vec_map = _load_gate_info(gate_location_yaml)
+    else:
+      self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
     self._time_between_gates = 5.0
     self.traj = None

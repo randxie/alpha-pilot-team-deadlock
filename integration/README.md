@@ -4,7 +4,7 @@
 * Launch flight goggle by ```roslaunch flightgoggles core.launch ignore_collisions:=1 use_sim_time:=0```
 * [For state estimation], ```roslaunch vins_estimator fg.launch```
 * [Optional] Launch vins mono by ```roslaunch vins_estimator fg_rviz.launch```
-* Run ```python2 run_state_machine_vins_mono.py```
+* Run ```python2 run_state_machine_vins_mono_gt.py```
 
 We are using Python2 here because tf package is supported in Python2.
 
