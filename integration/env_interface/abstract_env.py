@@ -49,7 +49,7 @@ class AbstractEnv(gym.Env):
 
     # for control execution
     rospy.init_node('fg_env', anonymous=True)
-    self.rate = rospy.Rate(100)  # 100hz
+    self.rate = rospy.Rate(200)  # 100hz
     self.thrust_publisher = rospy.Publisher('/uav/input/rateThrust', mav_msgs.RateThrust, queue_size=1)
 
     # measurements
