@@ -136,8 +136,7 @@ class StateMachine(object):
 if __name__ == '__main__':
   start_time = time.time()
   controller = PDController()  # controller should be independent of time
-  # env = GroundTruthEnv(start_time)
-  env = FgVinsEnv(start_time)
+  env = GroundTruthEnv(start_time)
   env.spin_listeners()
   planner = FastTrajectoryPlanner(start_time)
   localizer = None
