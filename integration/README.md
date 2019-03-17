@@ -1,7 +1,7 @@
 ## How to run
 
 * Set up environment by running ```. set_up_env.sh```
-* Launch flight goggle by ```roslaunch flightgoggles core.launch ignore_collisions:=0 use_sim_time:=0```
+* Launch flight goggle by ```roslaunch flightgoggles core.launch ignore_collisions:=0 use_sim_time:=0``` (maybe ok with vins_mono to set use_sim_time:=1 [default in core.launch])
 * [For state estimation], ```roslaunch vins_estimator fg.launch```
 * [Optional] Launch vins mono by ```roslaunch vins_estimator fg_rviz.launch```
 * Run ```python2 run_state_machine_vins_mono_gt.py```
