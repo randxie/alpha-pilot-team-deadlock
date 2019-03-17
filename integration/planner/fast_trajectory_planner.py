@@ -43,11 +43,9 @@ def _load_gate_info(filename):
   gate_map = {}
   vec_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
-    gate_map[i] = np.mean(gate_locations['Gate%d' % i]['nominal_location'], axis=0)
-    A = np.array(gate_locations['Gate%d' % i]['nominal_location'])
-    vec = np.sum(np.matmul(np.linalg.inv(np.matmul(A.T, A)), A.T), axis=1)
-    vec = vec / np.linalg.norm(vec)
-    vec_map[i] = vec
+    gate_loc = gate_locations['Gate%d' % i]['nominal_location']
+    gate_map[i] = np.mean(gate_loc, axis=0)
+    vec_map[i] = estimate_perpendicular_vec(gate_loc)
   return gate_map, vec_map
 
 
