@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
   'range_finder_queue_size': 1,
   'imu_queue_size': 1,
   'gt_queue_size': 1,
-  'ir_marker_queue_size': 20,
+  'ir_marker_queue_size': 50,
   'left_camera_queue_size': 1,
   'right_camera_queue_size': 1,
 }
@@ -64,6 +64,10 @@ class AbstractEnv(gym.Env):
     self.gate_loc = {}
     self.listener_thread = threading.Thread(target=self.attach_listeners)
 
+    # use init_pose to get offset (allowed in the game rule)
+    self.init_pose = rospy.get_param('/uav/flightgoggles_uav_dynamics/init_pose')
+    self.euler_angle_offset = tf.transformations.euler_from_quaternion(self.init_pose[3:])
+    self.xyz_offset = self.init_pose[0:3]
     self.height_offset = 1  # default offset for the quad
 
     self.target_gate = 10

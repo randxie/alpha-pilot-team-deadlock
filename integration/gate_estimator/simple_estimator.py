@@ -24,13 +24,14 @@ class SimpleEstimator(object):
   def estimate(self, ir_queue, target_gate=10):
     gate_width, gate_height = self._dim_map[target_gate]
     if not ir_queue.empty():
+      depth = None
       for data in list(ir_queue.queue):
         gate_pixel, states = data
         width_pixel, height_pixel = estimate_dimension_pixel(gate_pixel)
         if width_pixel:
           depth = gate_height * FY / height_pixel
 
-          return depth
+      return depth
 
     return None
 

@@ -69,7 +69,7 @@ class StateMachine(object):
       """
       From start to hovering
       """
-      if np.abs(self._env.states[2] - self.hovering_height) < 0.5:
+      if np.abs(self._env.states[2] - self.hovering_height) < 0.5 and self._env.is_vins_inited:
         self._sys_state = SystemState.HOVERING
       desired_states = np.array([0, 0, self.hovering_height, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     elif target_sys_state == SystemState.GATE_FOUND:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
   state_machine = StateMachine(env, controller, planner, localizer, explorer, gate_estimator)
 
   while True:
-    rospy.sleep(0.01)
+    rospy.sleep(0.005)
     try:
       state_machine.spin()
     except rospy.ROSInterruptException:
