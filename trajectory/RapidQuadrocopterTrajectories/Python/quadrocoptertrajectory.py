@@ -650,7 +650,7 @@ class RapidTrajectory:
             return np.array([0,0,0])
 
     def get_rotation_matrix(psi, theta, phi):
-        """ Return the rotation matrix to body frame.
+        """ Return the rotation matrix to body frame based on the current pose.
 
         Args:
             psi (float): roll angle
@@ -661,18 +661,28 @@ class RapidTrajectory:
             np.array() rotation matrix to body frame.
 
         """
-        return np.matrix([[                                     np.cos(theta)*np.cos(phi),                                      np.cos(theta)*np.sin(phi),            -np.sin(theta)],
-                          [-np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi),  np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), np.sin(psi)*np.cos(theta)],
-                          [ np.sin(psi)*np.sin(phi)+np.cos(psi)*np.sin(theta)*np.cos(phi), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi), np.cos(psi)*np.cos(theta)]]);
+        return np.matrix([[1,            0,            -np.sin(theta)],
+                          [0,  np.cos(phi), np.sin(phi)*np.cos(theta)],
+                          [0, -np.sin(phi), np.cos(phi)*np.cos(theta)]]);
 
-    def get_final_yaw(self, tmin, tmax, N):
-        yawRate = list();
-        time = np.linspace(tmin, tmax, N);
-        for j in range(N):
-            t = time[j];
-            rates = self.get_body_rates(t);
-            yawRate.append(rates[2]);
-        return np.trapz(yawRate, dx=(tmax-tmin)/N);
+
+    def get_pose(self, t, dt=1e-3):
+        """ Return pose based on numerical integration.
+
+        Args:
+            psi (float): roll angle
+            theta (float): pitch angle
+            phi (float): yaw angle
+
+        Returns:
+            np.array() rotation matrix to body frame.
+
+        """
+        bodyRates = list();
+        bodyRates.append(self.get_body_rates(t));
+        bodyRates.append(self.get_body_rates(t+dt));
+        print(dt);
+        return np.trapz(bodyRates, dx=dt, axis=0);
 
 
 

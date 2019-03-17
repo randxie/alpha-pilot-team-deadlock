@@ -103,6 +103,7 @@ class FastTrajectoryPlanner(object):
       self.traj.set_goal_position(next_gate_loc)
       self.traj.set_goal_velocity([0, 0, 0])
       self.traj.set_goal_acceleration(TARGET_ACCELERATION)
+      # Goal acceleration and velocity can be unconstrained using null argument e.g. ([None, None, None])
 
       self.traj.generate(self._time_between_gates)
       self._is_computed = True
