@@ -20,7 +20,7 @@ def main():
     acc0 = [0, 0, 0] # acceleration
 
     # Define the goal state:
-    posf = [1, 2, 1]  # position
+    posf = [20, -20, 17]  # position
     velf = [5, 5, 0]  # velocity
     accf = [0, 0, 0]  # acceleration
 
@@ -49,41 +49,43 @@ def main():
     acceleration = list();
     thrust = list();
     ratesMagn = list();
+    bodyRates = list();
+    attitude = list();
     N = 100;
 
     # Grid search optimization
     for i in range(len(Tf)):
         traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity);
         traj.set_goal_position(posf);
-        traj.set_goal_velocity([None, None, None]);
-        traj.set_goal_acceleration(accf);
+        traj.set_goal_velocity([2, 10, -5]);
+        traj.set_goal_acceleration([0, 0, 0]);
         traj.generate(Tf[i]);
         cost = traj.get_cost();
+
+        # To get (p, q, r), call traj.get_body_rates(t) and traj.get_rotation_matrix(psi, theta,phi)
+        # (p, q, r) get_body_rates returns body rates at time t in the inertial frame. These are to be rotated by the rotation matrix.
+
         # print((np.degrees(traj.get_final_yaw(tmin, Tf[i], N))))
         #and (traj.check_final_yaw(tmin,Tf[i], N) - desired_yaw <= tol)
         if (traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec) == 0):
             print(Tf[i]);
             break;
-        #     print(abs(desired_yaw - (np.degrees(traj.get_final_yaw(tmin, Tf[i], N)))));
-        #     break;
+
 
     # Obtain the trajectory with the lowest time
     timeToGo = Tf[i];
     time = np.linspace(tmin, timeToGo, N);
-    print(traj.get_cost());
     print(timeToGo)
     for j in range(N):
         t = time[j];
         position.append(traj.get_position(t));
         velocity.append(traj.get_velocity(t));
         acceleration.append(traj.get_acceleration(t));
+        bodyRates.append(traj.get_body_rates(t, dt=timeToGo/N));
+        attitude.append(traj.get_pose(t, dt=timeToGo/N));
         thrust.append(traj.get_thrust(t));
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
-<<<<<<< HEAD
-
-=======
-    print(thrust);
->>>>>>> 5d2835b4ca4b407f2c5a414d2aa92f2ae51d4408
+        
     ###############
     # Feasibility #
     ###############
