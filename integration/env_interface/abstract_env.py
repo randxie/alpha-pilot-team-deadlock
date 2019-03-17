@@ -17,6 +17,7 @@ import threading
 
 from queue import Queue
 from utils.util_transform import wrap_angle
+from utils.util_vision import order_points
 
 try:
   import pbcvt
@@ -27,7 +28,7 @@ DEFAULT_CONFIG = {
   'range_finder_queue_size': 1,
   'imu_queue_size': 1,
   'gt_queue_size': 1,
-  'ir_marker_queue_size': 50,
+  'ir_marker_queue_size': 25,
   'left_camera_queue_size': 1,
   'right_camera_queue_size': 1,
 }
@@ -165,20 +166,13 @@ class AbstractEnv(gym.Env):
       if marker.landmarkID.data == ('Gate%d' % self.target_gate):
         target.append((0, marker.x, marker.y))
 
-    if self.ir_marker_queue.full():
-      self.ir_marker_queue.get(False)
-    self.ir_marker_queue.put((np.array(target), self.states[0:6]))
+    if len(target) >= 2 and self.states[3] < np.pi/40 and self.states[4] < np.pi/40:
+      target = np.array(target)
+      target[:, 1:] = order_points(target[:, 1:])
 
-    """
-      self.gate_loc[marker.landmarkID.data] = (int(marker.x), int(marker.y))
-      img_left = self.left_camera_queue.get(False)
-      img_right = self.right_camera_queue.get(False)
-      if img_left is not None and img_right is not None:
-        disparity = pbcvt.depth_estimate(img_left, img_right)
-        print('central disparity: ', disparity[int(target_pixel[0]), int(target_pixel[1])])
-        plt.imshow(disparity, 'gray')
-        plt.pause(0.01)
-    """
+      if self.ir_marker_queue.full():
+        self.ir_marker_queue.get(False)
+      self.ir_marker_queue.put((target, self.states[0:6]))
 
   def _left_camera_callback(self, data):
     """For left camera image

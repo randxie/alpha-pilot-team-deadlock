@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-import trajectory_lib.quadrocopter_trajectory as quadtraj
+import trajectory_lib.quadrocoptertrajectory as quadtraj
 import numpy as np
 import os
 import rospy
@@ -106,7 +106,6 @@ class FastTrajectoryPlanner(object):
     """
     if next_gate_loc is None:
       desired_states = [0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      return np.array(desired_states)
 
     position = cur_state[0:3]
     velocity = cur_state[6:9]
@@ -126,13 +125,12 @@ class FastTrajectoryPlanner(object):
     else:
       p = self.traj.get_position(dt)
       v = self.traj.get_velocity(dt)
-      r = np.matmul(self.traj.get_rotation_matrix(cur_state[3], cur_state[4], cur_state[5]), self.traj.get_body_rates(dt))
-      a = self.traj.get_pose(dt);
-      if dt < (self._time_between_gates - 0.2):
-        cur_yaw = cur_gate_yaw
-      else:
-        cur_yaw = next_gate_yaw * dt / self._time_between_gates
-      desired_states = [p[0], p[1], p[2], cur_state[3]+a[0], cur_state[4]+a[1], cur_yaw, v[0], v[1], v[2], r[0], r[1], r[2]]
+      # disable it temporarily
+      #r = np.matmul(self.traj.get_rotation_matrix(cur_state[3], cur_state[4], cur_state[5]), self.traj.get_body_rates(dt))
+      #a = self.traj.get_pose(dt)
+
+      cur_yaw = cur_gate_yaw
+      desired_states = [p[0], p[1], p[2], 0, 0, cur_yaw, v[0], v[1], v[2], 0, 0, 0]
       # Small angle assumption used when directly using r for body rates. Rotate these by calling
       # self.traj.get_rotation_matrix(psi, theta, phi) and carry out the matrix multiplication
     return np.array(desired_states)

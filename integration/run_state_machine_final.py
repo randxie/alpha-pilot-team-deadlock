@@ -1,6 +1,4 @@
 """Execute the state machine with ground truth information."""
-# Work In Progress
-
 import argparse
 import numpy as np
 import rospy
@@ -12,8 +10,9 @@ from planner.fast_trajectory_planner import FastTrajectoryPlanner
 import time
 
 GATE_ORDER = [10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6]
-TARGET_PSi = [np.pi / 2, np.pi / 2, -np.pi / 2, -np.pi / 2, -np.pi / 2, -np.pi / 2, 0, np.pi / 2, np.pi / 2, np.pi / 2,
-              np.pi / 2, np.pi / 2]
+TARGET_PSi = [np.pi / 2, np.pi / 2, - np.pi / 2, - np.pi / 2, - np.pi / 2, - np.pi / 2, 0, np.pi / 2, np.pi / 2,
+              np.pi / 2, np.pi / 2, np.pi / 2]
+TARGET_HEADING = [1, 1, -1, -1, -1, -1, 1, 1, 1, 1, 1]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--gate_yaml", default=None, type=str, help="Gate location yaml file")
@@ -139,12 +138,11 @@ class StateMachine(object):
     #print('states', self._env.states[0:3], desired_states[0:3], self._env.states[9:12])
     self._env.step(actions)
 
-    # distance estimation
-    cur_x_y = self._env.states[0:2]
-    gate_x_y = self._planner.gate_map[GATE_ORDER[self._cur_gate_id]][0:2]
-    estimated_depth = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
-    if estimated_depth:
-      print('gate: %d, true depth: %f, estimated depth: %f' % (self._env.target_gate, np.linalg.norm(gate_x_y - cur_x_y), estimated_depth))
+    # distance estimation (work in progress)
+    gate_xyz = self._planner.gate_map[GATE_ORDER[self._cur_gate_id]]
+    estimated_xyz = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
+    if estimated_xyz is not None:
+      print('gate: %d' % GATE_ORDER[self._cur_gate_id], gate_xyz, estimated_xyz)
 
 
 if __name__ == '__main__':
@@ -160,7 +158,7 @@ if __name__ == '__main__':
   state_machine = StateMachine(env, controller, planner, localizer, explorer, gate_estimator)
 
   while True:
-    rospy.sleep(0.005)
+    rospy.sleep(0.01)
     try:
       state_machine.spin()
     except rospy.ROSInterruptException:
