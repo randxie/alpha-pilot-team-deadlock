@@ -27,9 +27,9 @@ DEFAULT_CONFIG = {
   'range_finder_queue_size': 1,
   'imu_queue_size': 1,
   'gt_queue_size': 1,
-  'ir_marker_queue_size': 1,
-  'left_camera_queue_size': 10,
-  'right_camera_queue_size': 10,
+  'ir_marker_queue_size': 20,
+  'left_camera_queue_size': 1,
+  'right_camera_queue_size': 1,
 }
 
 # reduce context switching
@@ -67,7 +67,6 @@ class AbstractEnv(gym.Env):
     self.height_offset = 1  # default offset for the quad
 
     self.target_gate = 10
-    self.pixel_diff = None
 
     self.reset()
 
@@ -160,12 +159,12 @@ class AbstractEnv(gym.Env):
     target = []
     for marker in data.markers:
       if marker.landmarkID.data == ('Gate%d' % self.target_gate):
-        target.append((marker.y, marker.x))
+        target.append((0, marker.x, marker.y))
 
-    if target:
-      target_pixel = np.mean(target, axis=0)
-      tmp_pixel_diff = target_pixel - CENTER
-      self.pixel_diff = (tmp_pixel_diff[1], tmp_pixel_diff[0])
+    if self.ir_marker_queue.full():
+      self.ir_marker_queue.get(False)
+    self.ir_marker_queue.put((np.array(target), self.states[0:6]))
+
     """
       self.gate_loc[marker.landmarkID.data] = (int(marker.x), int(marker.y))
       img_left = self.left_camera_queue.get(False)
