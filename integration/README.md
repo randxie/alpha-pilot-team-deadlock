@@ -14,7 +14,6 @@ We are using Python2 here because tf package is supported in Python2.
 * This issue should have been fixed because of an issue with the Queue, but if you see the action's value is hanging there, stop and rerun the python script immediately.
 
 ## Installing [VINS-Mono](https://github.com/HKUST-Aerial-Robotics/VINS-Mono) 
-## 1. Prerequisites
 1.1 **Ubuntu** and **ROS**
 Ubuntu  16.04.
 ROS Kinetic. [ROS Installation](http://wiki.ros.org/ROS/Installation)
@@ -56,7 +55,7 @@ make -j3
 make test
 make install
 ```
-4. Build VINS-Mono on ROS
+1.3. **Build VINS-Mono on ROS**
 ``` 
 cd ~/catkin_ws/src
 git clone https://github.com/HKUST-Aerial-Robotics/VINS-Mono.git
