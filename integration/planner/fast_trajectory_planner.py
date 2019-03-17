@@ -31,31 +31,43 @@ def estimate_perpendicular_vec(gate_loc):
   return vec / np.linalg.norm(vec)
 
 
+def estimate_dimension(gate_loc):
+  """Estimate gate dimension."""
+  A = np.array(gate_loc)
+  height = np.max(A[:, 2]) - np.min(A[:, 2])
+  width = np.max(np.linalg.norm(A[1:, 0:2] - A[0, 0:2], axis=1))
+  return width, height
+
+
 def _load_gate_info(filename):
   """Read gate information from yaml file.
 
   :param filename: A string specifying gate yaml file
-  :return: Gate center location, Perpendicular vector
+  :return: Gate center location, Perpendicular vector, Gate dimension
   """
   with open(os.path.join(FILE_DIR, '..', 'gate_locations', filename)) as f:
     gate_locations = yaml.safe_load(f)
 
   gate_map = {}
   vec_map = {}
+  dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
     gate_loc = gate_locations['Gate%d' % i]['nominal_location']
     gate_map[i] = np.mean(gate_loc, axis=0)
     vec_map[i] = estimate_perpendicular_vec(gate_loc)
-  return gate_map, vec_map
+    width_i, height_i = estimate_dimension(gate_loc)
+    dim_map[i] = (width_i, height_i)
+  return gate_map, vec_map, dim_map
 
 
 def _get_true_gate_info():
   """Read gate's nominal location from ros parameter server.
 
-  :return: Gate center location, Perpendicular vector
+  :return: Gate center location, Perpendicular vector, Gate dimension
   """
   gate_map = {}
   vec_map = {}
+  dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
     try:
       gate_loc = rospy.get_param('/uav/Gate%d/location' % i)
@@ -63,7 +75,9 @@ def _get_true_gate_info():
       gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
     gate_map[i] = np.mean(gate_loc, axis=0)
     vec_map[i] = estimate_perpendicular_vec(gate_loc)
-  return gate_map, vec_map
+    width_i, height_i = estimate_dimension(gate_loc)
+    dim_map[i] = (width_i, height_i)
+  return gate_map, vec_map, dim_map
 
 
 class FastTrajectoryPlanner(object):
@@ -75,9 +89,9 @@ class FastTrajectoryPlanner(object):
     self._start_time = start_time
 
     if use_true_gate:
-      self.gate_map, self.vec_map = _get_true_gate_info()
+      self.gate_map, self.vec_map, self.dim_map = _get_true_gate_info()
     else:
-      self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
+      self.gate_map, self.vec_map, self.dim_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
     self._time_between_gates = 5.0
     self.traj = None
