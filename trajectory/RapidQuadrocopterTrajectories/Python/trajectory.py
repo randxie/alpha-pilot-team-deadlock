@@ -52,7 +52,7 @@ def main():
     for i in range(len(Tf)-1):
         traj = quadtraj.RapidTrajectory(pos0, vel0, acc0, gravity);
         traj.set_goal_position(posf);
-        traj.set_goal_velocity(velf);
+        traj.set_goal_velocity([None, None, None]);
         traj.set_goal_acceleration(accf);
         traj.generate(Tf[i]);
         cost = traj.get_cost();
@@ -71,11 +71,11 @@ def main():
         acceleration.append(traj.get_acceleration(t));
         thrust.append(traj.get_thrust(t));
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
-    
+
     ###############
     # Feasibility #
     ###############
-    
+
     # Test input feasibility
     inputsFeasible = traj.check_input_feasibility(fmin, fmax, wmax, minTimeSec);
 
