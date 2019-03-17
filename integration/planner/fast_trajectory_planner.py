@@ -21,12 +21,22 @@ minTimeSec = 0.02  # [s]
 
 
 def estimate_perpendicular_vec(gate_loc):
+  """Estimate perpendicular vector by least square.
+
+  :param gate_loc: 4 corner points' x,y,z
+  :return: Normalized perpendicular vector
+  """
   A = np.array(gate_loc)
   vec = np.sum(np.matmul(np.linalg.inv(np.matmul(A.T, A)), A.T), axis=1)
   return vec / np.linalg.norm(vec)
 
 
 def _load_gate_info(filename):
+  """Read gate information from yaml file.
+
+  :param filename: A string specifying gate yaml file
+  :return: Gate center location, Perpendicular vector
+  """
   with open(os.path.join(FILE_DIR, '..', 'gate_locations', filename)) as f:
     gate_locations = yaml.safe_load(f)
 
@@ -42,6 +52,10 @@ def _load_gate_info(filename):
 
 
 def _get_true_gate_info():
+  """Read gate's nominal location from ros parameter server.
+
+  :return: Gate center location, Perpendicular vector
+  """
   gate_map = {}
   vec_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
