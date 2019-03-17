@@ -125,16 +125,31 @@ class FastTrajectoryPlanner(object):
     else:
       p = self.traj.get_position(dt)
       v = self.traj.get_velocity(dt)
-      # disable it temporarily
-      #r = np.matmul(self.traj.get_rotation_matrix(cur_state[3], cur_state[4], cur_state[5]), self.traj.get_body_rates(dt))
-      #a = self.traj.get_pose(dt)
+      r = np.matmul(self.traj.get_rotation_matrix(cur_state[3], cur_state[4], cur_state[5]), self.traj.get_body_rates(dt))
+      a = self.traj.get_pose(dt)
+      if dt < (self._time_between_gates - 0.2):
+        cur_yaw = cur_gate_yaw
+      else:
+        cur_yaw = next_gate_yaw * dt / self._time_between_gates - a[2]
+      desired_states = [p[0], p[1], p[2], cur_state[3]+a[0], cur_state[4]+a[1], cur_yaw, v[0], v[1], v[2], r[0], r[1], r[2]]
 
-      cur_yaw = cur_gate_yaw
-      desired_states = [p[0], p[1], p[2], 0, 0, cur_yaw, v[0], v[1], v[2], 0, 0, 0]
       # Small angle assumption used when directly using r for body rates. Rotate these by calling
       # self.traj.get_rotation_matrix(psi, theta, phi) and carry out the matrix multiplication
     return np.array(desired_states)
 
+  """
+  def get_yaw_profile(self, cur_yaw, gate_number, time):
+    # Incomplete
+    gate_normal = self.vec_map[gate_number]
+    world_normal = [1, 0, 0]
+    yaw_inertial = angle(world_normal, gate_normal)
+    return cur_yaw - yaw_inertial
+
+  def angle(self, v1, v2):
+    cosang = np.dot(v1, v2)
+    sinang = np.linalg.norm(np.cross(v1, v2))
+    return np.arctan2(sinang, cosang)
+  """
   def reset(self):
     self.traj.reset()
     self._is_computed = False

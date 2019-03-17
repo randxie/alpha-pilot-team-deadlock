@@ -85,7 +85,7 @@ def main():
         attitude.append(traj.get_pose(t, dt=timeToGo/N));
         thrust.append(traj.get_thrust(t));
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
-        
+
     ###############
     # Feasibility #
     ###############
@@ -118,6 +118,9 @@ def main():
     #     rospy.loginfo(position);
     #     pub.publish(position);
     #     rate.sleep();
+
+
+
 
 ###########################################
 # Plot the trajectories, and their inputs #
