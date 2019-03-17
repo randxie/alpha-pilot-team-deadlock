@@ -649,7 +649,7 @@ class RapidTrajectory:
         else:
             return np.array([0,0,0])
 
-    def get_rotation_matrix(psi, theta, phi):
+    def get_rotation_matrix(phi, theta, psi):
         """ Return the rotation matrix to body frame based on the current pose.
 
         Args:
