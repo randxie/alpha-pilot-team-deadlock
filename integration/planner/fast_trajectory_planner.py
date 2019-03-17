@@ -20,6 +20,12 @@ wmax = 20  # [rad/s]
 minTimeSec = 0.02  # [s]
 
 
+def estimate_perpendicular_vec(gate_loc):
+  A = np.array(gate_loc)
+  vec = np.sum(np.matmul(np.linalg.inv(np.matmul(A.T, A)), A.T), axis=1)
+  return vec / np.linalg.norm(vec)
+
+
 def _load_gate_info(filename):
   with open(os.path.join(FILE_DIR, '..', 'gate_locations', filename)) as f:
     gate_locations = yaml.safe_load(f)
@@ -35,16 +41,29 @@ def _load_gate_info(filename):
   return gate_map, vec_map
 
 
+def _get_true_gate_info():
+  gate_map = {}
+  vec_map = {}
+  for i in range(1, TOTAL_NUM_GATES + 1):
+    try:
+      gate_loc = rospy.get_param('/uav/Gate%d/location' % i)
+    except Exception as e:
+      gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
+    gate_map[i] = np.mean(gate_loc, axis=0)
+    vec_map[i] = estimate_perpendicular_vec(gate_loc)
+  return gate_map, vec_map
+
+
 class FastTrajectoryPlanner(object):
-  def __init__(self, start_time, gate_location_yaml=None):
+  def __init__(self, start_time, use_true_gate=True):
     """
 
     :param start_time: Start time to sync different components
     """
     self._start_time = start_time
 
-    if gate_location_yaml:
-      self.gate_map, self.vec_map = _load_gate_info(gate_location_yaml)
+    if use_true_gate:
+      self.gate_map, self.vec_map = _get_true_gate_info()
     else:
       self.gate_map, self.vec_map = _load_gate_info('gt_gate_location.yaml')
     self._is_computed = False
@@ -86,7 +105,7 @@ class FastTrajectoryPlanner(object):
         cur_yaw = cur_gate_yaw
       else:
         cur_yaw = next_gate_yaw * dt / self._time_between_gates
-      desired_states = [p[0], p[1], p[2], 0, 0, cur_yaw, v[0], v[1], v[2], 0, 0, 0]
+      desired_states = [p[0], p[1], p[2], 0, 0, cur_yaw, v[0], v[1], v[2], r[0], r[1], r[2]]
 
     return np.array(desired_states)
 
