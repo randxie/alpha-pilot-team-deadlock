@@ -85,6 +85,7 @@ def main():
         attitude.append(traj.get_pose(t, dt=timeToGo/N));
         thrust.append(traj.get_thrust(t));
         ratesMagn.append(np.linalg.norm(traj.get_body_rates(t)));
+    print(np.matmul(traj.get_rotation_matrix(1,2,3), traj.get_body_rates(t)))
 
     ###############
     # Feasibility #
