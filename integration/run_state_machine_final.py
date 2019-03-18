@@ -3,14 +3,13 @@ import argparse
 import numpy as np
 import rospy
 from controller.basic_controller import PDController
-from controller.basic_controller import PIDController
 from env_interface.fg_vins_env import FgVinsEnv
 from gate_estimator.simple_estimator import SimpleEstimator
-from planner.fast_trajectory_planner import FastTrajectoryPlanner
+from planner.missile_planner import MissilePlanner
 import time
 
 GATE_ORDER = [10, 21, 2, 13, 9, 14, 1, 22, 15, 23, 6]
-TARGET_PSi = [np.pi / 2, np.pi / 2, - np.pi / 2, - np.pi / 2, - np.pi / 2, - np.pi / 2, 0, np.pi / 2, np.pi / 2,
+TARGET_PSi = [np.pi / 2, np.pi / 2, -np.pi / 2, - np.pi / 2, - np.pi / 2, - np.pi / 2, 0, np.pi / 2, np.pi / 2,
               np.pi / 2, np.pi / 2, np.pi / 2]
 TARGET_HEADING = [1, 1, -1, -1, -1, -1, 1, 1, 1, 1, 1]
 
@@ -41,7 +40,6 @@ class StateMachine(object):
     self._sys_state = SystemState.START
     self._cur_gate_id = 0
     self.hovering_height = 5
-    self._cur_psi = 0
 
   def gate_searching(self):
     pass
@@ -101,48 +99,39 @@ class StateMachine(object):
       """
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center - gate_vec_loc * 2 * np.sign(TARGET_PSi[self._cur_gate_id]) * np.sign(gate_center[1])
+      gate_loc = gate_center - gate_vec_loc * 2 * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[1])
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 3:
         self._sys_state = SystemState.GATE_PASSING
-      desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc, next_gate_yaw=TARGET_PSi[self._cur_gate_id], cur_gate_yaw=self._cur_psi)
-      #desired_states = np.array([gate_loc[0], gate_loc[1], gate_loc[2], 0, 0, 0, 0, 0, 0, 0, 0, 0])
-      #desired_states[5] = self._cur_psi
-      #print('passing', self._cur_gate_id, gate_loc, desired_states[0:3])
+      desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
     elif target_sys_state == SystemState.GATE_ADJUST_POSE:
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center - gate_vec_loc * 1.25 * np.sign(TARGET_PSi[self._cur_gate_id]) * np.sign(gate_center[1])
+      gate_loc = gate_center - gate_vec_loc * 2 * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[1])
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 0.5:
-        self._cur_psi = TARGET_PSi[self._cur_gate_id + 1]
         self._sys_state = SystemState.GATE_ADJUST_POSE
-      #print('adjust pose', self._cur_gate_id, gate_loc, self._env.states[5], TARGET_PSi[self._cur_gate_id])
-      desired_states = np.array([gate_loc[0], gate_loc[1], gate_loc[2], 0, 0, 0, 0, 0, 0, 0, 0, 0])
-      desired_states[5] = TARGET_PSi[self._cur_gate_id]
+      desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
     elif target_sys_state == SystemState.GATE_PASSED:
       """
       if it is close enough to gate, transit to gate passing, otherwise stay
       """
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center + 4 * gate_vec_loc * np.sign(TARGET_PSi[self._cur_gate_id]) * np.sign(gate_center[1])
-      #desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
-      desired_states = np.array([gate_loc[0], gate_loc[1], gate_loc[2], 0, 0, 0, 0, 0, 0, 0, 0, 0])
-      desired_states[5] = self._cur_psi
-      #print('passed', self._cur_gate_id, gate_loc)
+      gate_loc = gate_center + 2.5 * gate_vec_loc * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[1])
+      desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 1:
         self._planner.reset()
         self._cur_gate_id += 1
         self._sys_state = SystemState.GATE_FOUND
 
     actions = self._controller.compute_action(self._env.states, desired_states)
-    #print('states', self._env.states[0:3], desired_states[0:3], self._env.states[9:12])
     self._env.step(actions)
 
     # distance estimation (work in progress)
-    gate_xyz = self._planner.gate_map[GATE_ORDER[self._cur_gate_id]]
-    estimated_xyz = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
-    if estimated_xyz is not None:
-      print('gate: %d' % GATE_ORDER[self._cur_gate_id], gate_xyz, estimated_xyz)
+    if self._cur_gate_id < len(GATE_ORDER):
+      gate_xyz = self._planner.gate_map[GATE_ORDER[self._cur_gate_id]]
+      estimated_xyz = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
+      if estimated_xyz is not None:
+        print('gate: %d' % GATE_ORDER[self._cur_gate_id], gate_xyz, estimated_xyz)
 
 
 if __name__ == '__main__':
@@ -151,7 +140,7 @@ if __name__ == '__main__':
   controller = PDController()  # controller should be independent of time
   env = FgVinsEnv(start_time)
   env.spin_listeners()
-  planner = FastTrajectoryPlanner(start_time)
+  planner = MissilePlanner(start_time)
   localizer = None
   explorer = None
   gate_estimator = SimpleEstimator(planner.dim_map)
