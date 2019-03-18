@@ -69,7 +69,7 @@ class AbstractEnv(gym.Env):
     self.init_pose = rospy.get_param('/uav/flightgoggles_uav_dynamics/init_pose')
     self.euler_angle_offset = tf.transformations.euler_from_quaternion(self.init_pose[3:])
     self.xyz_offset = self.init_pose[0:3]
-    self.height_offset = 1  # default offset for the quad
+    self.height_offset = self.xyz_offset[2]  # default offset for the quad
 
     self.target_gate = 10
 

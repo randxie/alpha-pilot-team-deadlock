@@ -116,7 +116,7 @@ class StateMachine(object):
       """
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center + 2.5 * gate_vec_loc * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[1])
+      gate_loc = gate_center + 3 * gate_vec_loc * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[1])
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 1:
         self._planner.reset()
