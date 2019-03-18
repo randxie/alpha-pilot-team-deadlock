@@ -37,16 +37,19 @@ class FgVinsEnv(AbstractEnv):
 
     # get estimated position
     position = np.array(
-      [data.pose.pose.position.x, data.pose.pose.position.y, data.pose.pose.position.z + self.height_offset])
+      [data.pose.pose.position.x + self.xyz_offset[0], data.pose.pose.position.y + self.xyz_offset[1],
+       data.pose.pose.position.z + self.xyz_offset[2]])
 
     # get estimated pose
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(
       [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z,
        data.pose.pose.orientation.w])
-    pose = np.array([roll, pitch, yaw])
+    pose = np.array(
+      [roll + self.euler_angle_offset[0], pitch + self.euler_angle_offset[1], yaw + self.euler_angle_offset[2]])
 
     # get estimated velocity
     velocity = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.linear.z])
+    print((position, pose, velocity))
     self.vins_queue.put((position, pose, velocity))
 
   def estimate_states(self):
@@ -60,7 +63,7 @@ class FgVinsEnv(AbstractEnv):
       if not self.is_vins_inited:
         if not self.range_finder_queue.empty():
           height = self.range_finder_queue.get(False)
-          self.states[2] = height
+          self.states[2] = height + self.height_offset
       else:
         if not self.vins_queue.empty():
           position, pose, velocity = self.vins_queue.get(False)

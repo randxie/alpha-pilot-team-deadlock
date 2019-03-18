@@ -39,7 +39,8 @@ class StateMachine(object):
     self._gate_estimator = gate_estimator
     self._sys_state = SystemState.START
     self._cur_gate_id = 0
-    self.hovering_height = 5
+    self.hovering_height = self._env.height_offset + 1.5
+    print(self.hovering_height)
 
   def gate_searching(self):
     pass
@@ -48,6 +49,7 @@ class StateMachine(object):
     pass
 
   def spin(self):
+    print(self._sys_state)
     if self._sys_state == SystemState.START:
       self.try_state_transition(SystemState.HOVERING)
     elif self._sys_state == SystemState.HOVERING:
@@ -66,9 +68,15 @@ class StateMachine(object):
       """
       From start to hovering
       """
-      if np.abs(self._env.states[2] - self.hovering_height) < 0.5 and self._env.is_vins_inited:
+      if np.abs(self._env.states[2] - self.hovering_height) < 0.1 and self._env.is_vins_inited:
         self._sys_state = SystemState.HOVERING
-      desired_states = np.array([0, 0, self.hovering_height, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+      if self._env.is_vins_inited:
+        desired_states = np.array(
+          [self._env.xyz_offset[0], self._env.xyz_offset[1], self.hovering_height, 0, 0, 0,
+           0, 0, 0, 0, 0, 0])
+      else:
+        desired_states = np.array(
+          [0, 0, self.hovering_height, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     elif target_sys_state == SystemState.GATE_FOUND:
       """
       Explorer only activates after passing the gate or at hovering state.
@@ -87,7 +95,6 @@ class StateMachine(object):
         # clear previous marker as we are entering a new gate.
         self._env.ir_marker_queue.queue.clear()
         self._planner._start_time = time.time()
-
         return
       else:
         self._sys_state = SystemState.STOP
