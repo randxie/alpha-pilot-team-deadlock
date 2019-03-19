@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import numpy as np
 import os
 import rospy
+import tf
 import time
 import yaml
 
@@ -37,10 +38,7 @@ def _get_true_gate_info():
   vec_map = {}
   dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
-    try:
-      gate_loc = rospy.get_param('/uav/Gate%d/location' % i)
-    except Exception as e:
-      gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
+    gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
     gate_map[i] = np.mean(gate_loc, axis=0)
     vec_map[i] = estimate_perpendicular_vec(gate_loc)
     width_i, height_i = estimate_dimension(gate_loc)
@@ -66,7 +64,7 @@ class MissilePlanner(object):
     :return: desired state for next step
     """
     if next_gate_loc is None:
-      desired_states = [0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      desired_states = [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       return np.array(desired_states)
 
     cur_x = cur_state[0]
