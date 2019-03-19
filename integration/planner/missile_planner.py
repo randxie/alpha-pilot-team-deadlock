@@ -34,15 +34,29 @@ def _get_true_gate_info():
 
   :return: Gate center location, Perpendicular vector, Gate dimension
   """
+  init_pose = rospy.get_param('/uav/flightgoggles_uav_dynamics/init_pose')
+  xyz_offset = init_pose[0:3]
   gate_map = {}
   vec_map = {}
   dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
     gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
+
+    gate_loc = np.array(gate_loc)
+    gate_loc[:, 0] = gate_loc[:, 0] - xyz_offset[0]
+    gate_loc[:, 1] = gate_loc[:, 1] - xyz_offset[1]
+    tmp = gate_loc[:, 0].copy()
+    gate_loc[:, 0] = gate_loc[:, 1]
+    gate_loc[:, 1] = -tmp
+
     gate_map[i] = np.mean(gate_loc, axis=0)
     vec_map[i] = estimate_perpendicular_vec(gate_loc)
     width_i, height_i = estimate_dimension(gate_loc)
     dim_map[i] = (width_i, height_i)
+    if i == 10:
+      print(gate_map[i])
+      print(gate_loc)
+      print(vec_map[i])
   return gate_map, vec_map, dim_map
 
 

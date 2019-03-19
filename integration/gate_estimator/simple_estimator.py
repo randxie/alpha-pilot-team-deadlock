@@ -83,17 +83,6 @@ class SimpleEstimator(object):
           dy = dy_pixel * ratio
           dz = dz_pixel * ratio
 
-          # estimate world coordinate
-          """
-          origin, xaxis, yaxis, zaxis = (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)
-          Rx = tf.transformations.rotation_matrix(states[3], xaxis)
-          Ry = tf.transformations.rotation_matrix(states[4], yaxis)
-          Rz = tf.transformations.rotation_matrix(states[5], zaxis)
-          R = tf.transformations.concatenate_matrices(Rx, Ry, Rz)
-          Rinv = tf.transformations.inverse_matrix(R)
-          vec = np.matmul(Rinv[0:3, 0:3], np.array([[dx], [dy], [dz]]))
-          """
-
           psi = states[5]
 
           gate_loc[i, 0] = states[0] + dx * np.cos(psi) - dy * np.sin(psi)

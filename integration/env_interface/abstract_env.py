@@ -28,7 +28,7 @@ DEFAULT_CONFIG = {
   'range_finder_queue_size': 1,
   'imu_queue_size': 1,
   'gt_queue_size': 1,
-  'ir_marker_queue_size': 25,
+  'ir_marker_queue_size': 1,
   'left_camera_queue_size': 1,
   'right_camera_queue_size': 1,
 }
@@ -166,13 +166,14 @@ class AbstractEnv(gym.Env):
       if marker.landmarkID.data == ('Gate%d' % self.target_gate):
         target.append((0, marker.x, marker.y))
 
-    if len(target) >= 2 and self.states[3] < np.pi/40 and self.states[4] < np.pi/40:
+    if len(target) >= 4 and self.states[3] < np.pi/18 and self.states[4] < np.pi/18:
       target = np.array(target)
       target[:, 1:] = order_points(target[:, 1:])
 
-      if self.ir_marker_queue.full():
-        self.ir_marker_queue.get(False)
-      self.ir_marker_queue.put((target, self.states[0:6]))
+      #if self.ir_marker_queue.full():
+      #self.ir_marker_queue.get(False)
+      if self.ir_marker_queue.empty():
+        self.ir_marker_queue.put((target, self.states[0:6]))
 
   def _left_camera_callback(self, data):
     """For left camera image
