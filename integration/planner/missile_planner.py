@@ -50,7 +50,10 @@ def _get_true_gate_info():
     gate_loc[:, 1] = -tmp
 
     gate_map[i] = np.mean(gate_loc, axis=0)
-    vec_map[i] = estimate_perpendicular_vec(gate_loc)
+    cur_vec = estimate_perpendicular_vec(gate_loc)
+    if cur_vec[0] < 0:
+      cur_vec = - cur_vec
+    vec_map[i] = cur_vec
     width_i, height_i = estimate_dimension(gate_loc)
     dim_map[i] = (width_i, height_i)
     if i == 10:
