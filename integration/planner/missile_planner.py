@@ -8,6 +8,7 @@ import yaml
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 TOTAL_NUM_GATES = 23
+DEBUG = True
 
 
 def estimate_perpendicular_vec(gate_loc):
@@ -38,16 +39,27 @@ def _get_true_gate_info():
   xyz_offset = init_pose[0:3]
   gate_map = {}
   vec_map = {}
+  perturb_map = {}
   dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
-    gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
-
+    # sanity check
+    if DEBUG:
+      gate_loc = rospy.get_param('/uav/Gate%d/location' % i)
+    else:
+      gate_loc = rospy.get_param('/uav/Gate%d/nominal_location' % i)
     gate_loc = np.array(gate_loc)
+
+    # change of coordinates for gate location
     gate_loc[:, 0] = gate_loc[:, 0] - xyz_offset[0]
     gate_loc[:, 1] = gate_loc[:, 1] - xyz_offset[1]
     tmp = gate_loc[:, 0].copy()
     gate_loc[:, 0] = gate_loc[:, 1]
     gate_loc[:, 1] = -tmp
+
+    # change of coordiantes for gate perturbation
+    perturbation_bound = rospy.get_param('/uav/Gate%d/perturbation_bound' % i)
+    perturbation_bound[0], perturbation_bound[1] = perturbation_bound[1], perturbation_bound[0]
+    perturb_map[i] = perturbation_bound
 
     gate_map[i] = np.mean(gate_loc, axis=0)
     cur_vec = estimate_perpendicular_vec(gate_loc)
@@ -56,11 +68,7 @@ def _get_true_gate_info():
     vec_map[i] = cur_vec
     width_i, height_i = estimate_dimension(gate_loc)
     dim_map[i] = (width_i, height_i)
-    if i == 10:
-      print(gate_map[i])
-      print(gate_loc)
-      print(vec_map[i])
-  return gate_map, vec_map, dim_map
+  return gate_map, vec_map, dim_map, perturb_map
 
 
 class MissilePlanner(object):
@@ -70,7 +78,7 @@ class MissilePlanner(object):
     :param start_time: Start time to sync different components
     """
     self._start_time = start_time
-    self.gate_map, self.vec_map, self.dim_map = _get_true_gate_info()
+    self.gate_map, self.vec_map, self.dim_map, self.perturb_map = _get_true_gate_info()
 
   def get_desired_state(self, cur_state, next_gate_loc=None):
     """Only used to pass the first gate.

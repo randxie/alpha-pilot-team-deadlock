@@ -35,7 +35,6 @@ class StateMachine(object):
     self._sys_state = SystemState.START
     self._cur_gate_id = 0
     self.hovering_height = self._env.height_offset + 2
-    print(self.hovering_height)
 
   def gate_searching(self):
     pass
@@ -44,7 +43,6 @@ class StateMachine(object):
     pass
 
   def spin(self):
-    print(self._sys_state)
     if self._sys_state == SystemState.START:
       self.try_state_transition(SystemState.HOVERING)
     elif self._sys_state == SystemState.HOVERING:
@@ -76,13 +74,9 @@ class StateMachine(object):
       """
       Explorer only activates after passing the gate or at hovering state.
       """
-      gate_found = True  # should interact with gate detector / env
-      if gate_found:
+      if True:
         self._sys_state = SystemState.GATE_FOUND
         return
-      else:
-        # exploring
-        pass
     elif target_sys_state == SystemState.GATE_TRACKING:
       if self._cur_gate_id < len(GATE_ORDER):
         self._sys_state = SystemState.GATE_TRACKING
@@ -101,10 +95,11 @@ class StateMachine(object):
       """
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center - gate_vec_loc * 2 * TARGET_HEADING[self._cur_gate_id] #* np.sign(gate_center[0])
+      gate_loc = gate_center - gate_vec_loc * 2 * TARGET_HEADING[self._cur_gate_id]
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 3:
         self._sys_state = SystemState.GATE_PASSING
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
+      print('flying to: ', self._cur_gate_id, gate_loc, desired_states[0:3])
     elif target_sys_state == SystemState.GATE_ADJUST_POSE:
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
@@ -114,7 +109,7 @@ class StateMachine(object):
         self._sys_state = SystemState.GATE_ADJUST_POSE
 
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 6:
-        gate_loc_ref = gate_center + gate_vec_loc * 3 * TARGET_HEADING[self._cur_gate_id] #* np.sign(gate_center[0])
+        gate_loc_ref = gate_center + gate_vec_loc * 3 * TARGET_HEADING[self._cur_gate_id]
         desired_state_ref = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc_ref)
       else:
         desired_state_ref = None
@@ -122,30 +117,23 @@ class StateMachine(object):
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
       if desired_state_ref is not None:
         desired_states[5] = desired_state_ref[5]
-        print(desired_state_ref[5])
-
+        print('adjust pose: ', self._cur_gate_id, gate_loc, self._env.states[5], desired_state_ref[5])
     elif target_sys_state == SystemState.GATE_PASSED:
       """
       if it is close enough to gate, transit to gate passing, otherwise stay
       """
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
-      gate_loc = gate_center + 3 * gate_vec_loc * TARGET_HEADING[self._cur_gate_id] #* np.sign(gate_center[1])
+      gate_loc = gate_center + 3 * gate_vec_loc * TARGET_HEADING[self._cur_gate_id]
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 1.5:
         self._planner.reset()
         self._cur_gate_id += 1
-        self._sys_state = SystemState.GATE_FOUND
+        self._sys_state = SystemState.HOVERING
+      print('flying after gate: ', self._cur_gate_id, gate_loc)
 
     actions = self._controller.compute_action(self._env.states, desired_states)
     self._env.step(actions)
-
-    # distance estimation (work in progress)
-    if self._cur_gate_id < len(GATE_ORDER):
-      gate_xyz = self._planner.gate_map[GATE_ORDER[self._cur_gate_id]]
-      estimated_xyz = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
-      if estimated_xyz is not None:
-        print('gate: %d' % GATE_ORDER[self._cur_gate_id], gate_xyz, estimated_xyz)
 
 
 if __name__ == '__main__':
@@ -160,7 +148,7 @@ if __name__ == '__main__':
   state_machine = StateMachine(env, controller, planner, localizer, explorer, gate_estimator)
 
   while True:
-    rospy.sleep(0.0075)
+    rospy.sleep(0.008)
     try:
       state_machine.spin()
     except rospy.ROSInterruptException:

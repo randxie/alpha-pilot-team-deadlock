@@ -56,8 +56,8 @@ class SimpleEstimator(object):
         weight_vec[i] = gate_pixel.shape[0]
 
         ratio = []
-        if width_pixel:
-          ratio.append(gate_width / width_pixel)
+        #if width_pixel:
+        #ratio.append(gate_width / width_pixel)
 
         if height_pixel:
           ratio.append(gate_height / height_pixel)
@@ -72,8 +72,8 @@ class SimpleEstimator(object):
           # estimate distance in y-direction and z-direction by mapping pixel distance to meter
 
           # find gate center
-          gate_cx = np.average(gate_pixel[:, 1])
-          gate_cy = np.average(gate_pixel[:, 2])
+          gate_cx = (np.max(gate_pixel[:, 1]) + np.min(gate_pixel[:, 1])) / 2
+          gate_cy = (np.max(gate_pixel[:, 2]) + np.min(gate_pixel[:, 2])) / 2
 
           # compute distance to image center
           dy_pixel = CX - gate_cx
@@ -83,11 +83,10 @@ class SimpleEstimator(object):
           dy = dy_pixel * ratio
           dz = dz_pixel * ratio
 
-          psi = states[5]
-
-          gate_loc[i, 0] = states[0] + dx * np.cos(psi) - dy * np.sin(psi)
-          gate_loc[i, 1] = states[1] - dx * np.sin(psi) + dy * np.cos(psi)
+          gate_loc[i, 0] = states[0] + dx
+          gate_loc[i, 1] = states[1] + dy
           gate_loc[i, 2] = states[2] + dz
+          print(gate_loc)
 
       # take the average
       return np.average(gate_loc, weights=weight_vec, axis=0)

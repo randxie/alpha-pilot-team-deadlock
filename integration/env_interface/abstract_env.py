@@ -166,14 +166,13 @@ class AbstractEnv(gym.Env):
       if marker.landmarkID.data == ('Gate%d' % self.target_gate):
         target.append((0, marker.x, marker.y))
 
-    if len(target) >= 4 and self.states[3] < np.pi/18 and self.states[4] < np.pi/18:
+    if len(target) >= 3 and self.states[3] < np.pi/25 and self.states[4] < np.pi/25:
       target = np.array(target)
       target[:, 1:] = order_points(target[:, 1:])
 
-      #if self.ir_marker_queue.full():
-      #self.ir_marker_queue.get(False)
-      if self.ir_marker_queue.empty():
-        self.ir_marker_queue.put((target, self.states[0:6]))
+      if self.ir_marker_queue.full():
+        self.ir_marker_queue.get(False)
+      self.ir_marker_queue.put((target, self.states[0:6]))
 
   def _left_camera_callback(self, data):
     """For left camera image
