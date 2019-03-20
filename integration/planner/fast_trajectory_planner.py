@@ -130,6 +130,7 @@ class FastTrajectoryPlanner(object):
       if dt < (self._time_between_gates - 0.2):
         cur_yaw = cur_gate_yaw
       else:
+        next_gate_yaw = self.get_yaw_profile(cur_yaw,)
         cur_yaw = next_gate_yaw * dt / self._time_between_gates # - a[2]
       desired_states = [p[0], p[1], p[2], cur_state[3], cur_state[4], cur_yaw, v[0], v[1], v[2], r[0], r[1], r[2]]
 
@@ -137,19 +138,21 @@ class FastTrajectoryPlanner(object):
       # self.traj.get_rotation_matrix(psi, theta, phi) and carry out the matrix multiplication
     return np.array(desired_states)
 
-  """
-  def get_yaw_profile(self, cur_yaw, gate_number, time):
-    # Incomplete
+
+  def get_yaw_profile(self, cur_yaw, gate_number = 0):
+    # eNeed gate number to extract normal for angle calculation
     gate_normal = self.vec_map[gate_number]
     world_normal = [1, 0, 0]
     yaw_inertial = angle(world_normal, gate_normal)
     return cur_yaw - yaw_inertial
 
+
   def angle(self, v1, v2):
     cosang = np.dot(v1, v2)
     sinang = np.linalg.norm(np.cross(v1, v2))
     return np.arctan2(sinang, cosang)
-  """
+
+
   def reset(self):
     self.traj.reset()
     self._is_computed = False

@@ -5,7 +5,10 @@
   <arg name="level"/>
   <arg name="gate_locations" default="0"/>
   <env name="CWD" value="$(env PWD)" />
-     
+  
+  <!-- TODO : Initialize VINS MONO -->
+  
+  
   <group ns="/control_nodes">
     <!-- Start human teleoperation nodes -->
     <node name="universal_teleop" pkg="universal_teleop" type="universal_teleop" output="screen">
@@ -17,6 +20,9 @@
       <remap from="output/reset" to="/uav/input/reset"/>
     </node>
   </group>
+  
+  <!-- requires state_machine as an installed node. Please see README -->
+  <node name="statemachine" pkg="state_machine" type="statemachine.py" output="screen" cwd='node' required="true"/>
 
   <!--include core flightgoggles launch file-->
   <include file="$(find flightgoggles)/launch/core.launch">
@@ -29,6 +35,8 @@
   <node name="reporter" pkg="flightgoggles_reporter" type="reporter.py" output="screen" cwd='node' required="true"/>
   <!-- Launch override settings. Must be placed at end of file to override params set in core launchfile. -->
 
+  
+  
   <!--For teleoperation, run dynamics in real time-->
   <param name="/use_sim_time" value="false" />
 <group ns="/uav">
