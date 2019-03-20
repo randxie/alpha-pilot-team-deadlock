@@ -85,7 +85,7 @@ class AbstractEnv(gym.Env):
     """
     # wrap angles
     self.estimate_states()
-    self.states[3:6] = wrap_angle(self.states[3:6])
+    #self.states[3:6] = wrap_angle(self.states[3:6])
     self.publish_actions(actions)
 
     return self.states, 0, False, {}
