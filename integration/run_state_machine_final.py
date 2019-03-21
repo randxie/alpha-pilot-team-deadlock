@@ -5,6 +5,7 @@ import rospy
 from controller.basic_controller import PDController
 from env_interface.fg_vins_env import FgVinsEnv
 from gate_estimator.simple_estimator import SimpleEstimator
+from gate_estimator.bayesian_estimator import BayesianEstimator
 from planner.missile_planner import MissilePlanner
 import time
 
@@ -99,17 +100,16 @@ class StateMachine(object):
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 3:
         self._sys_state = SystemState.GATE_PASSING
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
-      print('flying to: ', self._cur_gate_id, gate_loc, desired_states[0:3])
     elif target_sys_state == SystemState.GATE_ADJUST_POSE:
       gate_center = self._planner.gate_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_vec_loc = self._planner.vec_map.get(GATE_ORDER[self._cur_gate_id], None)
       gate_loc = gate_center - gate_vec_loc * 2 * TARGET_HEADING[self._cur_gate_id] * np.sign(gate_center[0])
       gate_width, gate_height = self._planner.dim_map[GATE_ORDER[self._cur_gate_id]]
-      if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < (gate_width / 2):
+      if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < (gate_width / 2.5):
         self._sys_state = SystemState.GATE_ADJUST_POSE
 
       if np.linalg.norm(np.array(self._env.states[0:3]) - np.array(gate_loc)) < 6:
-        gate_loc_ref = gate_center + gate_vec_loc * 3 * TARGET_HEADING[self._cur_gate_id]
+        gate_loc_ref = gate_center + gate_vec_loc * 3.5 * TARGET_HEADING[self._cur_gate_id]
         desired_state_ref = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc_ref)
       else:
         desired_state_ref = None
@@ -117,7 +117,7 @@ class StateMachine(object):
       desired_states = self._planner.get_desired_state(self._env.states, next_gate_loc=gate_loc)
       if desired_state_ref is not None:
         desired_states[5] = desired_state_ref[5]
-        print('adjust pose: ', self._cur_gate_id, gate_loc, self._env.states[5], desired_state_ref[5])
+        #print('adjust pose: ', self._cur_gate_id, gate_loc, self._env.states[5], desired_state_ref[5])
     elif target_sys_state == SystemState.GATE_PASSED:
       """
       if it is close enough to gate, transit to gate passing, otherwise stay
@@ -130,9 +130,14 @@ class StateMachine(object):
         self._planner.reset()
         self._cur_gate_id += 1
         self._sys_state = SystemState.HOVERING
-      print('flying after gate: ', self._cur_gate_id, gate_loc)
+      #print('flying after gate: ', self._cur_gate_id, gate_loc)
 
     actions = self._controller.compute_action(self._env.states, desired_states)
+    """
+    estimate_xyz = self._gate_estimator.estimate(self._env.ir_marker_queue, GATE_ORDER[self._cur_gate_id])
+    if estimate_xyz is not None:
+      print('est: ', estimate_xyz, 'true: ', self._planner.gate_map[GATE_ORDER[self._cur_gate_id]])
+    """
     self._env.step(actions)
 
 
@@ -144,7 +149,7 @@ if __name__ == '__main__':
   planner = MissilePlanner(start_time)
   localizer = None
   explorer = None
-  gate_estimator = SimpleEstimator(planner.dim_map)
+  gate_estimator = BayesianEstimator(planner.gate_map, planner.vec_map, planner.dim_map, planner.perturb_map)
   state_machine = StateMachine(env, controller, planner, localizer, explorer, gate_estimator)
 
   while True:

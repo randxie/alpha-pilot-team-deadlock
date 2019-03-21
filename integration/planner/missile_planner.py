@@ -42,7 +42,6 @@ def _get_true_gate_info():
   perturb_map = {}
   dim_map = {}
   for i in range(1, TOTAL_NUM_GATES + 1):
-    # sanity check
     if DEBUG:
       gate_loc = rospy.get_param('/uav/Gate%d/location' % i)
     else:

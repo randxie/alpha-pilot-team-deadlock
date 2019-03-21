@@ -85,7 +85,7 @@ class AbstractEnv(gym.Env):
     """
     # wrap angles
     self.estimate_states()
-    #self.states[3:6] = wrap_angle(self.states[3:6])
+    self.states[3:6] = wrap_angle(self.states[3:6])
     self.publish_actions(actions)
 
     return self.states, 0, False, {}
@@ -164,11 +164,11 @@ class AbstractEnv(gym.Env):
     target = []
     for marker in data.markers:
       if marker.landmarkID.data == ('Gate%d' % self.target_gate):
-        target.append((0, marker.x, marker.y))
+        target.append((marker.x, marker.y))
 
-    if len(target) >= 3 and self.states[3] < np.pi/25 and self.states[4] < np.pi/25:
+    if len(target) >= 4 and self.states[3] < np.pi/10 and self.states[4] < np.pi/10:
       target = np.array(target)
-      target[:, 1:] = order_points(target[:, 1:])
+      target = order_points(target)
 
       if self.ir_marker_queue.full():
         self.ir_marker_queue.get(False)

@@ -73,6 +73,12 @@ class PDController(object):
     apsi_dot = 0.5
     epsi = psi_d - psi
     epsi_dot = r_d - r
+
+    if epsi < -np.pi:
+      epsi += 2 * np.pi
+    elif epsi > np.pi:
+      epsi -= 2 * np.pi
+
     upsi = (apsi * epsi + apsi_dot * epsi_dot)
 
     return uz, uphi, utheta, upsi
