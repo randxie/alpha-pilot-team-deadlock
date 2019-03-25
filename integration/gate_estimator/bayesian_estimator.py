@@ -82,6 +82,23 @@ class BayesianEstimator(object):
         gate_pixel, states = data
         gate_pixel = gate_pixel.astype(np.float32)
 
+        # get center points
+        gate_loc_center = np.zeros((5, 3))
+        gate_pixel_center = np.zeros((5, 2))
+        for i in range(4):
+          if i < 3:
+            gate_loc_center[i, :] = (gate_loc[i, :] + gate_loc[i+1, :]) / 2
+            gate_pixel_center[i, :] = (gate_loc[i, :] + gate_loc[i + 1, :]) / 2
+          else:
+            gate_loc_center[i, :] = (gate_loc[i, :] + gate_loc[0, :]) / 2
+            gate_pixel_center[i, :] = (gate_loc[i, :] + gate_loc[0, :]) / 2
+
+        gate_loc_center[5, :] = np.mean(gate_loc, axis=0)
+        gate_pixel_center[5, :] = np.mean(gate_pixel, axis=0)
+
+        gate_loc = np.concatenate((gate_loc, gate_loc_center), axis=0)
+        gate_pixel = np.concatenate((gate_pixel, gate_pixel_center), axis=0)
+
         _, _, tvec = cv2.solvePnP(gate_loc, gate_pixel, self.camera_matrix, None)
 
         #loc = states[0:2] - tvec.ravel()[0:2]
