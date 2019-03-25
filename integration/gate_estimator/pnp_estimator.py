@@ -93,17 +93,20 @@ class PnpEstimator(object):
           los3 = np.array([ gate_pixel[2,0], gate_pixel[2,1], 1.0 ], dtype=np.float64) 
           los4 = np.array([ gate_pixel[3,0], gate_pixel[3,1], 1.0 ], dtype=np.float64) 
 
+          # line_sight = np.average(gate_pixel, axis=0)
+          # los = np.array([ line_sight[0], line_sight[1], 1.0 ], dtype=np.float64)
+
           # convert pose to Rotation matrix
           R = euler_to_rot_mat(*pose).T     # 3 x 3
 
           # rotation_matrix = np.zeros(shape=(3,3))
           # cv2.Rodrigues(rvecs, rotation_matrix)
 
-
           tvec = np.array(position, dtype=np.float64).T
 
           inv_cam = np.linalg.inv(camera_K)
 
+          # los = np.dot(inv_cam, los)
           los1 = np.dot(inv_cam , los1)
           los2 = np.dot(inv_cam , los2)
           los3 = np.dot(inv_cam , los3)
@@ -111,16 +114,30 @@ class PnpEstimator(object):
 
           # create pose matrix (3 x 4)
           camera_translation = - np.dot(R, tvec)
+
+          # los = np.dot(R, los)
           los1 = np.dot(R, los1)  
           los2 = np.dot(R, los2)
           los3 = np.dot(R, los3)
           los4 = np.dot(R, los4)
 
-          gate_loc[:,0] = - camera_translation[0] + states[0]
-          gate_loc[:,1] = - camera_translation[1] + states[1]
-          gate_loc[:,2] = - camera_translation[2] + states[2]
+          total_los = (los1 + los2 + los3 + los4) / 4.0
+
+          gate_loc[:,0] = np.abs(-camera_translation[0] + np.abs(total_los[0]))
+          gate_loc[:,1] = np.abs(-camera_translation[1] + np.abs(total_los[1]))
+          gate_loc[:,2] = np.abs(-camera_translation[2] + np.abs(total_los[2]))
+
+          # gate_loc[:,0] = - camera_translation[0] + states[0] + total_los[0]
+          # gate_loc[:,1] = - camera_translation[1] + states[1] + total_los[1]
+          # gate_loc[:,2] = - camera_translation[2] + states[2] + total_los[2]
+
+          # gate_loc[:,0] = - camera_translation[0] + states[0] - los[0]
+          # gate_loc[:,1] = - camera_translation[1] + states[1] - los[1]
+          # gate_loc[:,2] = - camera_translation[2] + states[2] - los[2]
 
       # take the average
       return np.average(gate_loc, weights=weight_vec, axis=0)
+      # result = -camera_translation + np.abs(los)
+      # return np.abs(result)
 
     return None
