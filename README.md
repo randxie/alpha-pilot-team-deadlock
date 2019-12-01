@@ -6,18 +6,23 @@ This repo contains all the code that Team Deadlock developed in the [alpha pilot
 
 ## Tasks for qualifier
 * Vision
-    * Object detection
-    * Depth estimation
+    * [Object detection using MaskRCNN](vision/gate_detection) 
+    * [Depth estimation](vision/depth_estimation): not used in the final system.
 * Control
     * Quadcopter controller
-        * Cascading PID
+        * [Cascading PID](e2e_system/controller/basic_controller.py)
     * Trajectory generation
-        * MST
+        * [Rapid trajectory generation for quadrocopters](trajectory/RapidQuadrocopterTrajectories)
 * Simulation
-    * Simple dynamic simulation in numpy
-    * ROS full simulation
+    * [Simple dynamic simulation in numpy](control/quad_sim)
+    * [ROS example simulation in rotor_s](simulation/rotor_s_env)
+    * [Official competition simulator FlightGoggle config](flight_goggle_config)
 * SLAM
-    * Visual inertial odometry (use VINS-MONO)
+    * [Visual inertial odometry using VINS-MONO](slam/vins_mono_custom)
+* End-to-end System
+    * [Fly using ground truth states](e2e_system/run_state_machine_gt.py)
+    * [Fly using ground truth gate locations](e2e_system/run_state_machine_vins_mono_gt.py)
+    * [Fly with estimated gate locations](e2e_system/run_state_machine_final.py)
     
 ## Contribution guide
 If you are working on a subcomponent, feel free to commit to the corresponding folder directly. If you are trying to modify the integration folder, please code in another branch and submit a pull request. Something to pay attention before submitting your code.
