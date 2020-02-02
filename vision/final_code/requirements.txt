@@ -1,7 +1,7 @@
 # Library dependencies found by running score_pipeline.py on Python 3.5.2 environment (required by LMAP)
 # Nvidia CUDA 10.0
 
-tensorflow-gpu==1.15.0
+tensorflow-gpu==1.15.2
 matplotlib==3.0.3
 numpy==1.16.2
 scipy==1.2.1
